@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "LioroExpo",
-    "slug": "LioroExpo",
+    "name": "chytřejim.cz",
+    "slug": "chytrejim-cz",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "lioroexpo",
+    "scheme": "chytrejim",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -33,10 +33,16 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "supabaseUrl": "https://wjhfcaynarzkqzvekzaf.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqaGZjYXluYXJ6a3F6dmVremFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwODE0NzcsImV4cCI6MjA3MjY1NzQ3N30.qFpXNLtiOgsPVTAODU5EAjdAmdqptfxZHSZXii0dONU"
     }
   }
 }

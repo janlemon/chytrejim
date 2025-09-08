@@ -1,0 +1,17 @@
+// Lightweight analytics stub. Replace with real telemetry later.
+export type DietEvent =
+  | { type: 'diet_search'; queryLength: number }
+  | { type: 'diet_select'; code: string; source: 'hint' | 'custom' }
+  | { type: 'diet_remove'; code: string };
+
+export type OnboardingEvent =
+  | { type: 'onboarding_select'; step: 'activity_level'; value: 'sedentary'|'light'|'moderate'|'active'|'very_active' }
+  | { type: 'onboarding_learn_more_open' }
+  | { type: 'onboarding_activity_suggest_used'; source: 'steps'|'quiz'; value: 'sedentary'|'light'|'moderate'|'active'|'very_active' };
+
+export function track(ev: DietEvent | OnboardingEvent) {
+  try {
+    // eslint-disable-next-line no-console
+    console.log('[analytics]', ev);
+  } catch {}
+}

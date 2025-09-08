@@ -1,0 +1,268 @@
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import * as Localization from 'expo-localization';
+
+const resources = {
+  cs: {
+    translation: {
+      app: { name: "chytřejim.cz", subtitle: "" },
+      common: { loading: "Načítám…", ok: "OK", error: "Chyba", signOut: "Odhlásit se", next: "Další", back: "Zpět", continue: "Pokračovat", start: "Začít" },
+      home: {
+        title: "Vítej v chytřejim.cz",
+        supabaseStatus: "Stav Supabase",
+        initialized: "Supabase klient inicializován ✅"
+      },
+      auth: {
+        email: "Email",
+        emailPlaceholder: "email@domena.cz",
+        password: "Heslo",
+        passwordPlaceholder: "••••••••",
+        confirmPassword: "Potvrzení hesla",
+        confirmPasswordPlaceholder: "••••••••",
+        signIn: "Přihlásit se",
+        signingIn: "Přihlašuji…",
+        forgot: "Zapomenuté heslo",
+        noAccount: "Nemám účet",
+        haveAccount: "Mám účet",
+        register: "Vytvořit účet",
+        registering: "Vytvářím účet…",
+        reset: "Obnovit heslo",
+        resetting: "Odesílám…",
+        resetSent: "Poslali jsme ti odkaz pro reset hesla. Zkontroluj email.",
+        verifyEmailSent: "Poslali jsme ti potvrzovací odkaz. Zkontroluj email.",
+        pwMismatch: "Hesla se neshodují",
+        chooseLang: "Jazyk",
+        backToLogin: "Zpět na přihlášení"
+        , savePassword: "Uložit heslo"
+        , saving: "Ukládám…"
+        , passwordUpdated: "Heslo bylo změněno. Přihlas se prosím znovu."
+      }
+      , onboarding: {
+        welcomeTitle: "Pojďme přizpůsobit aplikaci tobě",
+        welcomeBody: "Zodpověz pár otázek. Zabere to minutu a pomůže to přesnějším doporučením.",
+        profileTitle: "Základní údaje",
+        profileSubtitle: "Řekni nám o sobě základní informace",
+        firstNamePlaceholder: "Křestní jméno",
+        lastNamePlaceholder: "Příjmení",
+        birthDatePlaceholder: "Datum narození (DD.MM.RRRR)",
+        birthDateErrorFormat: "Zadej datum ve formátu RRRR-MM-DD.",
+        birthDateErrorRange: "Věk musí být mezi 13 a 100 lety.",
+        genderTitle: "Pohlaví",
+        gender: { male: "Muž", female: "Žena", other: "Jiné", prefer_not_to_say: "Nechci uvést" },
+        ageTitle: "Kolik ti je let?",
+        agePlaceholder: "Např. 30",
+        heightTitle: "Jak měříš na výšku (cm)?",
+        heightPlaceholder: "Např. 180",
+        heightErrorRange: "Zadej číslo 120–250 cm.",
+        weightTitle: "Kolik vážíš (kg)?",
+        weightPlaceholder: "Např. 75",
+        weightErrorRange: "Zadej číslo 35–300 kg.",
+        activityTitle: "Jaká je tvoje aktivita?",
+        activitySubtitle: "Použijeme k úpravě denních cílů.",
+        activityDesc: {
+          sedentary: "Většinu dne sedíte (kancelář, auto). < 5 000 kroků/den, bez pravidelného tréninku.",
+          light: "Lehký pohyb 1–3× týdně, ~5–7 tis. kroků/den.",
+          moderate: "Pohyb 3–5× týdně, ~7–9 tis. kroků/den.",
+          active: "Každodenní trénink nebo fyzická práce, ~9–12 tis. kroků/den.",
+          very_active: "Těžká fyzická práce / 2fázové tréninky, > 12 tis. kroků/den.",
+        },
+        activityLearnMore: "Více informací",
+        activityLegendTitle: "Jak vybrat úroveň aktivity",
+        activityLegend: {
+          level: "Úroveň",
+          day: "Typický den",
+          steps: "Kroky/den",
+          workouts: "Trénink/týden",
+          tdee: "Faktor TDEE",
+          rows: {
+            sedentary: { day: "kancelář, auto", steps: "< 5 k", workouts: "0–1×", tdee: "1.2" },
+            light: { day: "občasné procházky", steps: "5–7 k", workouts: "1–3×", tdee: "1.375" },
+            moderate: { day: "pravidelný sport", steps: "7–9 k", workouts: "3–5×", tdee: "1.55" },
+            active: { day: "manuální práce / denně sport", steps: "9–12 k", workouts: "6–7×", tdee: "1.725" },
+            very_active: { day: "fyzicky náročná práce / dvoufázově", steps: "> 12 k", workouts: "7×+", tdee: "1.9" },
+          }
+        },
+        activityNotSure: "Nejste si jistí?",
+        activityHelpMeChoose: "Poradit s výběrem",
+        activityUseSuggestion: "Použít doporučení",
+        activityQuiz: {
+          q1: "Kolik dní v týdnu cvičíš?",
+          q1o: { d0_1: "0–1", d1_3: "1–3", d3_5: "3–5", d6_7: "6–7" },
+          q2: "Práce spíš sedavá nebo manuální?",
+          q2o: { sedentary: "sedavá", mixed: "smíšená", manual: "manuální" }
+        },
+        activity: { sedentary: "Sedavá", light: "Lehká", moderate: "Střední", active: "Aktivní", very_active: "Velmi aktivní" },
+        goalTitle: "Jaký je tvůj cíl?",
+        goalLose: "Zhubnout",
+        goalMaintain: "Udržet váhu",
+        goalGain: "Nabrat svaly",
+        goalExplore: "Jen prozkoumávám",
+        goal: { lose: "Zhubnout", maintain: "Udržet váhu", gain: "Nabrat svaly", explore: "Jen prozkoumávám" },
+        dietTitle: "Stravovací preference",
+        dietaryFlags: "Vyber, co ti nevyhovuje",
+        allergensTitle: "Alergeny",
+        searchDietsAllergens: "Hledat diety nebo alergeny…",
+        showMore: "Zobrazit více",
+        dietSearchPlaceholder: "Hledat diety…",
+        allergenSearchPlaceholder: "Hledat alergeny…",
+        addCustom: "Přidat vlastní…",
+        flags: { noMilk: "Bez mléka", glutenFree: "Bez lepku", vegan: "Vegan", vegetarian: "Vegetarián" },
+        allergensPlaceholder: "Alergeny (odděl čárkou)",
+        cuisinesTitle: "Oblíbené kuchyně",
+        cuisinesPlaceholder: "Kuchyně, které máš rád/a",
+        filterAll: "Vše",
+        typeDiet: "Dieta",
+        typeAllergen: "Alergen",
+        typeCuisine: "Kuchyně",
+        customTag: "vlastní",
+        consentTitle: "Souhlasy",
+        consentTerms: "Souhlasím s obchodními podmínkami",
+        consentPrivacy: "Souhlasím se zpracováním osobních údajů",
+        step: "Krok {{n}} z {{total}}",
+        saveError: "Nepodařilo se uložit. Zkus to prosím znovu.",
+        reviewTitle: "Zkontroluj a dokonči",
+        finish: "Dokončit",
+        fillAll: "Vyplň prosím všechny údaje"
+      }
+    }
+  },
+  en: {
+    translation: {
+      app: { name: "chytřejim.cz", subtitle: "" },
+      common: { loading: "Loading…", ok: "OK", error: "Error", signOut: "Sign out", next: "Next", back: "Back", continue: "Continue", start: "Get started" },
+      home: {
+        title: "Welcome to chytřejim.cz",
+        supabaseStatus: "Supabase status",
+        initialized: "Supabase client initialized ✅"
+      },
+      auth: {
+        email: "Email",
+        emailPlaceholder: "you@example.com",
+        password: "Password",
+        passwordPlaceholder: "••••••••",
+        confirmPassword: "Confirm password",
+        confirmPasswordPlaceholder: "••••••••",
+        signIn: "Sign in",
+        signingIn: "Signing in…",
+        forgot: "Forgot password",
+        noAccount: "Create account",
+        haveAccount: "I have an account",
+        register: "Create account",
+        registering: "Creating…",
+        reset: "Reset password",
+        resetting: "Sending…",
+        resetSent: "We sent you a reset link. Check your email.",
+        verifyEmailSent: "We sent you a verification link. Check your email.",
+        pwMismatch: "Passwords do not match",
+        chooseLang: "Language",
+        backToLogin: "Back to login"
+        , savePassword: "Save password"
+        , saving: "Saving…"
+        , passwordUpdated: "Password updated. Please sign in again."
+      }
+      , onboarding: {
+        welcomeTitle: "Let’s tailor the app to you",
+        welcomeBody: "Answer a few quick questions to get better recommendations.",
+        profileTitle: "Basic info",
+        profileSubtitle: "Tell us a bit about yourself",
+        firstNamePlaceholder: "First name",
+        lastNamePlaceholder: "Last name",
+        birthDatePlaceholder: "Birth date (YYYY-MM-DD)",
+        birthDateErrorFormat: "Enter date in YYYY-MM-DD format.",
+        birthDateErrorRange: "Age must be between 13 and 100.",
+        genderTitle: "Gender",
+        gender: { male: "Male", female: "Female", other: "Other", prefer_not_to_say: "Prefer not to say" },
+        ageTitle: "How old are you?",
+        agePlaceholder: "e.g. 30",
+        heightTitle: "How tall are you (cm)?",
+        heightPlaceholder: "e.g. 180",
+        heightErrorRange: "Enter a number 120–250 cm.",
+        weightTitle: "What’s your weight (kg)?",
+        weightPlaceholder: "e.g. 75",
+        weightErrorRange: "Enter a number 35–300 kg.",
+        activityTitle: "What’s your activity level?",
+        activitySubtitle: "Used to adjust your daily energy needs.",
+        activityDesc: {
+          sedentary: "Mostly sitting (office, driving). < 5k steps/day, no regular training.",
+          light: "Light activity 1–3× per week, ~5–7k steps/day.",
+          moderate: "Activity 3–5× per week, ~7–9k steps/day.",
+          active: "Daily training or physical job, ~9–12k steps/day.",
+          very_active: "Hard physical work / 2-a-day training, > 12k steps/day.",
+        },
+        activityLearnMore: "Learn more",
+        activityLegendTitle: "How to choose activity level",
+        activityLegend: {
+          level: "Level",
+          day: "Typical day",
+          steps: "Steps/day",
+          workouts: "Workouts/week",
+          tdee: "TDEE factor",
+          rows: {
+            sedentary: { day: "office, driving", steps: "< 5k", workouts: "0–1×", tdee: "1.2" },
+            light: { day: "occasional walks", steps: "5–7k", workouts: "1–3×", tdee: "1.375" },
+            moderate: { day: "regular sport", steps: "7–9k", workouts: "3–5×", tdee: "1.55" },
+            active: { day: "manual job / daily sport", steps: "9–12k", workouts: "6–7×", tdee: "1.725" },
+            very_active: { day: "physically demanding / two-a-days", steps: "> 12k", workouts: "7×+", tdee: "1.9" },
+          }
+        },
+        activityNotSure: "Not sure?",
+        activityHelpMeChoose: "Help me choose",
+        activityUseSuggestion: "Use this suggestion",
+        activityQuiz: {
+          q1: "How many days a week do you train?",
+          q1o: { d0_1: "0–1", d1_3: "1–3", d3_5: "3–5", d6_7: "6–7" },
+          q2: "Is your work mostly sedentary or manual?",
+          q2o: { sedentary: "sedentary", mixed: "mixed", manual: "manual" }
+        },
+        activity: { sedentary: "Sedentary", light: "Light", moderate: "Moderate", active: "Active", very_active: "Very active" },
+        goalTitle: "What’s your goal?",
+        goalLose: "Lose weight",
+        goalMaintain: "Maintain weight",
+        goalGain: "Gain muscle",
+        goalExplore: "Just exploring",
+        goal: { lose: "Lose weight", maintain: "Maintain weight", gain: "Gain muscle", explore: "Just exploring" },
+        dietTitle: "Dietary preferences",
+        dietaryFlags: "Select what doesn’t suit you",
+        allergensTitle: "Allergens",
+        searchDietsAllergens: "Search diets or allergens…",
+        showMore: "Show more",
+        dietSearchPlaceholder: "Search diets…",
+        allergenSearchPlaceholder: "Search allergens…",
+        addCustom: "Add my own…",
+        flags: { noMilk: "No milk", glutenFree: "Gluten-free", vegan: "Vegan", vegetarian: "Vegetarian" },
+        allergensPlaceholder: "Allergens (comma-separated)",
+        cuisinesTitle: "Favorite cuisines",
+        cuisinesPlaceholder: "Favorite cuisines",
+        filterAll: "All",
+        typeDiet: "Diet",
+        typeAllergen: "Allergen",
+        typeCuisine: "Cuisine",
+        customTag: "custom",
+        consentTitle: "Consents",
+        consentTerms: "I agree with the Terms of Service",
+        consentPrivacy: "I agree with the Privacy Policy",
+        step: "Step {{n}} of {{total}}",
+        saveError: "Could not save. Please try again.",
+        reviewTitle: "Review and finish",
+        finish: "Finish",
+        fillAll: "Please fill in all fields"
+      }
+    }
+  }
+};
+
+const locales = Localization.getLocales();
+const deviceLang =
+  (Array.isArray(locales) && locales[0]?.languageCode) ? locales[0]!.languageCode! : 'cs';
+
+i18n.use(initReactI18next).init({
+  resources,
+  lng: deviceLang === 'cs' ? 'cs' : (deviceLang === 'en' ? 'en' : 'cs'),
+  fallbackLng: ['cs','en'],
+  interpolation: { escapeValue: false },
+  // Mobilní appky často nechtějí Suspense na překlady –
+  // bez Provideru by to dělalo prázdnou obrazovku.
+  react: { useSuspense: false }
+});
+
+export default i18n;
