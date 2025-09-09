@@ -10,16 +10,7 @@ import {
   useColorScheme,
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
-import { supabase } from "../lib/supabase";
-
-type TDEEForDateRow = {
-  date: string;
-  target_kcal: number;
-  bmr_msj: number;
-  steps_kcal: number;
-  workouts_kcal: number;
-  steps: number;
-};
+import { supabase } from "../../../lib/supabase";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const localDateISO = (d = new Date()) =>
