@@ -1,2 +1,2 @@
-import HeightStep from "@/features/onboarding/screens/HeightStep";
+import HeightStep from "@features/onboarding/screens/HeightStep";
 export default HeightStep;

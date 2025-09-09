@@ -33,7 +33,9 @@ export default function ReviewStep() {
         if (mounted) {
           setProfileDb(p || null);
           if (!pref) {
-            await supabase.from('user_preferences').upsert({ user_id: user.id, allergens: [] }).catch(() => {});
+            try {
+              await supabase.from('user_preferences').upsert({ user_id: user.id, allergens: [] });
+            } catch {}
             setPrefsDb({ allergens: [] });
           } else {
             setPrefsDb(pref);
@@ -198,6 +200,8 @@ export default function ReviewStep() {
         gain: 'gain',
         explore: null,
       };
+      const safeGoalKey = (data.goal || '') as keyof typeof goalMap;
+      const mappedGoal = goalMap[safeGoalKey] ?? null;
       const payload = {
         id: user.id,
         first_name: data.first_name || null,
@@ -207,7 +211,7 @@ export default function ReviewStep() {
         height_cm: height || null,
         initial_weight_kg: weight || null,
         activity_level: data.activity_level || null,
-        goal: goalMap[data.goal],
+        goal: mappedGoal,
         dietary_flags: (data.dietary_flags && data.dietary_flags.length) ? data.dietary_flags : null,
         // address not required; keep null
         address: null,
@@ -264,7 +268,7 @@ export default function ReviewStep() {
   );
 
   const SectionCard = ({ title, children, complete, onEdit, testID }: { title: string; children: React.ReactNode; complete: boolean; onEdit: () => void; testID: string }) => (
-    <View testID={testID} accessibilityRole="summary" style={{ borderWidth: 2, borderColor: complete ? tokens.border : theme.colors.warning || '#b45309', borderRadius: 16, backgroundColor: tokens.card, padding: 16 }}>
+    <View testID={testID} accessibilityRole="summary" style={{ borderWidth: 2, borderColor: complete ? tokens.border : '#b45309', borderRadius: 16, backgroundColor: tokens.card, padding: 16 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 16 }}>{title}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

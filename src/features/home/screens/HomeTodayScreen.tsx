@@ -229,9 +229,9 @@ export default function HomeTodayScreen() {
         .eq("user_id", user.id)
         .maybeSingle();
       if (!tg) {
-        await supabase
-          .rpc("compute_and_save_targets_for_me", { p_steps_target: 8000 })
-          .catch(() => {});
+        try {
+          await supabase.rpc("compute_and_save_targets_for_me", { p_steps_target: 8000 });
+        } catch {}
         const ref = await supabase
           .from("targets")
           .select("kcal_target,protein_g_target,steps_target")
@@ -585,4 +585,3 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 });
-

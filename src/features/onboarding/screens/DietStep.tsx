@@ -407,7 +407,7 @@ export default function DietStep() {
                       ) : null}
                       {query ? (
                         <TouchableOpacity testID="diet-add-custom" onPress={() => { addCustomDiet(); track({ type: 'diet_select', code: `custom:${slug(query)}`, source: 'custom' }); }} style={{ minHeight: 44, paddingHorizontal: 12, justifyContent: 'center', borderTopWidth: 1, borderTopColor: tokens.border }}>
-                          <Text style={{ color: tokens.text }}>{t('onboarding.addCustom')} "{query}"</Text>
+                          <Text style={{ color: tokens.text }}>{t('onboarding.addCustom')} &quot;{query}&quot;</Text>
                         </TouchableOpacity>
                       ) : null}
                     </View>
@@ -490,7 +490,7 @@ export default function DietStep() {
                     ListFooterComponent={() => (
                       cQuery ? (
                         <TouchableOpacity testID="cuisine-add-custom" onPress={() => { setCuisines([...(data.cuisines || []), `custom:${slug(cQuery)}`]); setCQuery(''); }} style={{ minHeight: 44, paddingHorizontal: 12, justifyContent: 'center', borderTopWidth: 1, borderTopColor: tokens.border }}>
-                          <Text style={{ color: tokens.text }}>{t('onboarding.addCustom')} "{cQuery}"</Text>
+                          <Text style={{ color: tokens.text }}>{t('onboarding.addCustom')} &quot;{cQuery}&quot;</Text>
                         </TouchableOpacity>
                       ) : null
                     )}
