@@ -121,6 +121,12 @@ const resources = {
         step: "Krok {{n}} z {{total}}",
         saveError: "Nepodařilo se uložit. Zkus to prosím znovu.",
         reviewTitle: "Zkontroluj a dokonči",
+        reviewSubtitle: "Zkontroluj své údaje, než přizpůsobíme plán.",
+        missing: "Chybí",
+        notSet: "(Není vyplněno)",
+        years: "{{n}} let",
+        edit: "Upravit",
+        bmiHint: "BMI je pouze orientační.",
         finish: "Dokončit",
         fillAll: "Vyplň prosím všechny údaje"
       }
@@ -244,6 +250,12 @@ const resources = {
         step: "Step {{n}} of {{total}}",
         saveError: "Could not save. Please try again.",
         reviewTitle: "Review and finish",
+        reviewSubtitle: "Check your info before we personalize your plan.",
+        missing: "Missing",
+        notSet: "(Not set)",
+        years: "{{n}} years",
+        edit: "Edit",
+        bmiHint: "BMI is only an estimate.",
         finish: "Finish",
         fillAll: "Please fill in all fields"
       }
