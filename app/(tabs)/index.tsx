@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SafeAreaView, Text, View, TouchableOpacity, Alert, useColorScheme, ScrollView, Modal, TextInput, AccessibilityInfo } from "react-native";
+import { SafeAreaView, Text, View, TouchableOpacity, Alert, useColorScheme, ScrollView, Modal, TextInput, AccessibilityInfo, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../../src/lib/supabase";
 import { getTokens } from "../../src/ui/tokens";
@@ -36,6 +36,8 @@ export default function HomeTab() {
   const [weightInput, setWeightInput] = useState<string>("");
   const [reduceMotion, setReduceMotion] = useState(false);
   const [week, setWeek] = useState<Array<{ day: string; kcal: number }>>([]);
+  const [firstName, setFirstName] = useState<string>("");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     track({ type: 'home_open' } as any);
@@ -56,6 +58,14 @@ export default function HomeTab() {
           tg = ref.data as any; // may still be null
         }
         setTargets(tg || null);
+        // Profile (first name for greeting)
+        const { data: prof } = await supabase.from('profiles').select('first_name').eq('id', user.id).maybeSingle();
+        {
+          const um: any = (user as any)?.user_metadata || {};
+          let name = (prof as any)?.first_name || um.first_name || (um.full_name ? String(um.full_name).split(' ')[0] : '') || (user.email ? String(user.email).split('@')[0] : '');
+          setFirstName(name);
+        }
+
         // Daily nutrition totals
         const { data: dt } = await supabase.from('daily_nutrition_totals').select('kcal,protein_g').eq('user_id', user.id).eq('day', todayDate).maybeSingle();
         setTotals(dt ? { kcal: Number(dt.kcal) || 0, protein_g: Number(dt.protein_g) || 0 } : { kcal: 0, protein_g: 0 });
@@ -169,8 +179,30 @@ export default function HomeTab() {
   };
 
   return (
+    <>
     <SafeAreaView style={{ flex: 1, backgroundColor: tokens.bg }}>
-      <ScrollView contentContainerStyle={{ gap: 16, padding: 16 }}>
+      {/* Header */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8 }}>
+        <View>
+          <Text style={{ color: tokens.text, fontSize: 20, fontWeight: '600' }}>{firstName ? `${(t as any).i18n?.language === 'cs' ? 'Ahoj' : 'Hi'}, ${firstName}` : ((t as any).i18n?.language === 'cs' ? 'Ahoj' : 'Hi')}</Text>
+          <Text style={{ color: tokens.muted, fontSize: 14 }}>
+            {(() => {
+              const lang = (t as any).i18n?.language === 'cs' ? 'cs-CZ' : 'en-US';
+              const d = new Date();
+              const parts = new Intl.DateTimeFormat(lang, { weekday: 'short', day: 'numeric', month: 'long' }).formatToParts(d);
+              const wd = parts.find(p=>p.type==='weekday')?.value || '';
+              const day = parts.find(p=>p.type==='day')?.value || '';
+              const mon = parts.find(p=>p.type==='month')?.value || '';
+              const cap = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+              if (lang === 'cs-CZ') return `${cap(wd)}, ${day}. ${mon}`; else return `${cap(wd)}, ${mon} ${day}`;
+            })()}
+          </Text>
+        </View>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Menu" onPress={() => setMenuOpen(true)}>
+          <Text style={{ color: tokens.text, fontSize: 22 }}>⋯</Text>
+        </TouchableOpacity>
+      </View>
+      <ScrollView contentContainerStyle={{ gap: 16, padding: 16, paddingTop: 12 }}>
         <Card title={t('home.today.energy')} testID="home-donut" right={
           <TouchableOpacity testID="home-donut-toggle" onPress={() => { setShowPercent(s => !s); track({ type: 'home_donut_toggle' } as any); }}>
             <Text style={{ color: tokens.accent }}>{showPercent ? t('home.today.percent') : t('home.today.kcal')}</Text>
@@ -251,20 +283,32 @@ export default function HomeTab() {
         </Card>
 
         <Card title={t('home.today.protein')} testID="home-protein">
-          <ProgressBar value={proteinConsumed} total={proteinTarget || 1} color={tokens.accent} />
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ color: tokens.muted }}>{Math.round(proteinConsumed)} g</Text>
-            <Text style={{ color: tokens.muted }}>{proteinTarget ? t('home.today.left', { n: proteinLeft }) : t('home.today.targetMissing')}</Text>
+          <View testID="home-protein-bar">
+            <ProgressBar value={proteinConsumed} total={proteinTarget || 1} color={tokens.accent} />
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ color: tokens.muted }}>{Math.round(proteinConsumed)} g of {proteinTarget || 0} g</Text>
+            {proteinTarget ? (
+              <View style={{ borderWidth: 1, borderColor: proteinLeft>0 ? tokens.border : '#EF4444', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
+                <Text style={{ color: proteinLeft>0 ? tokens.text : '#EF4444' }}>{proteinLeft>0 ? t('home.today.left', { n: proteinLeft }) : t('home.today.overBy', { n: Math.abs(proteinLeft) })}</Text>
+              </View>
+            ) : (
+              <TouchableOpacity><Text style={{ color: tokens.accent }}>{t('home.today.targetMissing')}</Text></TouchableOpacity>
+            )}
           </View>
         </Card>
 
         <Card title={t('home.today.steps')} testID="home-steps">
           {stepsTarget ? (
             <>
-              <ProgressBar value={stepsToday} total={stepsTarget} color={tokens.accent} />
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ color: tokens.muted }}>{stepsToday}</Text>
-                <Text style={{ color: tokens.muted }}>/ {stepsTarget}</Text>
+              <View testID="home-steps-bar">
+                <ProgressBar value={stepsToday} total={stepsTarget} color={tokens.accent} />
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ color: tokens.muted }}>{stepsToday} / {stepsTarget}</Text>
+                <View style={{ borderWidth: 1, borderColor: (stepsTarget - stepsToday)>0 ? tokens.border : '#EF4444', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
+                  <Text style={{ color: (stepsTarget - stepsToday)>0 ? tokens.text : '#EF4444' }}>{(stepsTarget - stepsToday)>0 ? `${stepsTarget-stepsToday} left` : t('home.today.overBy', { n: Math.abs(stepsTarget-stepsToday) })}</Text>
+                </View>
               </View>
             </>
           ) : (
@@ -329,5 +373,20 @@ export default function HomeTab() {
         </View>
       </Modal>
     </SafeAreaView>
+    {/* Top-right menu */}
+    <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+      <Pressable style={{ flex: 1 }} onPress={() => setMenuOpen(false)}>
+        <View style={{ position: 'absolute', top: 60, right: 16, backgroundColor: tokens.card, borderRadius: 12, borderWidth: 1, borderColor: tokens.border, paddingVertical: 8, width: 180, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }}>
+          <TouchableOpacity onPress={() => { setMenuOpen(false); Alert.alert((t as any).i18n?.language === 'cs' ? 'Nastavení' : 'Settings'); }} style={{ paddingVertical: 10, paddingHorizontal: 12 }}>
+            <Text style={{ color: tokens.text }}>{(t as any).i18n?.language === 'cs' ? 'Nastavení' : 'Settings'}</Text>
+          </TouchableOpacity>
+          <View style={{ height: 1, backgroundColor: tokens.border, opacity: 0.7 }} />
+          <TouchableOpacity onPress={async () => { setMenuOpen(false); try { await supabase.auth.signOut(); } catch (e:any) { Alert.alert('Error', e?.message ?? 'Please try again'); } }} style={{ paddingVertical: 10, paddingHorizontal: 12 }}>
+            <Text style={{ color: tokens.text }}>{(t as any).i18n?.language === 'cs' ? 'Odhlásit' : 'Logout'}</Text>
+          </TouchableOpacity>
+        </View>
+      </Pressable>
+    </Modal>
+    </>
   );
 }
