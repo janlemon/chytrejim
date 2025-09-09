@@ -1,2 +1,2 @@
-import GenderStep from "../../src/features/onboarding/screens/GenderStep";
+import GenderStep from "@/features/onboarding/screens/GenderStep";
 export default GenderStep;

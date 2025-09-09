@@ -1,3 +1,2 @@
-import GoalStep from "../../src/features/onboarding/screens/GoalStep";
+import GoalStep from "@/features/onboarding/screens/GoalStep";
 export default GoalStep;
-

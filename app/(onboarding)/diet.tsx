@@ -1,3 +1,2 @@
-import DietStep from "../../src/features/onboarding/screens/DietStep";
+import DietStep from "@/features/onboarding/screens/DietStep";
 export default DietStep;
-
