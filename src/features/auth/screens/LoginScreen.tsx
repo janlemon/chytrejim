@@ -5,6 +5,7 @@ import Logo from "../../../components/Logo";
 import { theme, cardStyle, inputStyle, buttonStyle, buttonTextStyle } from "../../../theme";
 import { supabase } from "../../../lib/supabase";
 import { useTranslation } from "react-i18next";
+import { track } from "@/analytics";
 
 export default function LoginScreen() {
   const { t, i18n } = useTranslation();
@@ -15,13 +16,16 @@ export default function LoginScreen() {
 
   const onLogin = async () => {
     try {
+      track({ type: 'auth_login_click' });
       setLoading(true);
       const { error } = await supabase.auth.signInWithPassword({ email, password: pwd });
       if (error) throw error;
       const { data: userData } = await supabase.auth.getUser();
       const onboarded = !!userData.user?.user_metadata?.onboarded;
+      track({ type: 'auth_login_success' });
       router.replace(onboarded ? "/(tabs)" : "/(onboarding)");
     } catch (e: any) {
+      track({ type: 'auth_login_error', message: e?.message || 'unknown' });
       Alert.alert(t("common.error"), e?.message ?? "Please try again");
     } finally {
       setLoading(false);
@@ -91,4 +95,3 @@ export default function LoginScreen() {
     </SafeAreaView>
   );
 }
-

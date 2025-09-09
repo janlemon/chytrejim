@@ -10,6 +10,7 @@ import {
   useColorScheme,
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
+import { track } from "@/analytics";
 import { supabase } from "../../../lib/supabase";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -350,6 +351,8 @@ export default function HomeTodayScreen() {
   }, [todayISO]);
 
   useEffect(() => {
+    // log screen open
+    track({ type: 'home_open' });
     load();
   }, [load]);
 
@@ -373,7 +376,7 @@ export default function HomeTodayScreen() {
             }).format(new Date())}
           </Text>
         </View>
-        <Pressable style={styles.iconBtn} accessibilityRole="button" accessibilityLabel="Menu">
+        <Pressable style={styles.iconBtn} accessibilityRole="button" accessibilityLabel="Menu" onPress={() => track({ type: 'home_menu_click' })}>
           <Text style={{ color: t.text, fontSize: 18 }}>⋯</Text>
         </Pressable>
       </View>
@@ -384,13 +387,13 @@ export default function HomeTodayScreen() {
           <View style={styles.toggleRow}>
             <Text style={[styles.toggleLabel, { color: t.muted }]}>zobrazit</Text>
             <Pressable
-              onPress={() => setUnit("kcal")}
+              onPress={() => { setUnit("kcal"); track({ type: 'home_toggle_unit', unit: 'kcal' }); }}
               style={[styles.toggleBtn, unit === "kcal" && { backgroundColor: t.border }]}
             >
               <Text style={{ color: t.text }}>kcal</Text>
             </Pressable>
             <Pressable
-              onPress={() => setUnit("%")}
+              onPress={() => { setUnit("%"); track({ type: 'home_toggle_unit', unit: '%' }); }}
               style={[styles.toggleBtn, unit === "%" && { backgroundColor: t.border }]}
             >
               <Text style={{ color: t.text }}>%</Text>
@@ -486,9 +489,9 @@ export default function HomeTodayScreen() {
       <View style={[styles.card, { backgroundColor: t.card, borderColor: t.border }]}>
         <Text style={[styles.cardTitle, { color: t.text, marginBottom: 8 }]}>Rychlé akce</Text>
         <View style={styles.actions}>
-          <PrimaryBtn label="🍽️ Přidat jídlo" t={t} onPress={() => {}} />
-          <SecondaryBtn label="⚖️ Zadat váhu" t={t} onPress={() => {}} />
-          <PrimaryBtn label="🏃‍♂️ Začít trénink" t={t} onPress={() => {}} />
+          <PrimaryBtn label="🍽️ Přidat jídlo" t={t} onPress={() => track({ type: 'home_quick_action', action: 'add_meal' })} />
+          <SecondaryBtn label="⚖️ Zadat váhu" t={t} onPress={() => track({ type: 'home_quick_action', action: 'add_weight' })} />
+          <PrimaryBtn label="🏃‍♂️ Začít trénink" t={t} onPress={() => track({ type: 'home_quick_action', action: 'start_workout' })} />
         </View>
       </View>
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import { Link } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { track } from "@/analytics";
 import Logo from "../../../components/Logo";
 import { theme, cardStyle, inputStyle, buttonStyle, buttonTextStyle } from "../../../theme";
 import { supabase } from "../../../lib/supabase";
@@ -13,13 +14,16 @@ export default function ForgotPasswordScreen() {
 
   const onReset = async () => {
     try {
+      track({ type: 'auth_forgot_click' });
       setLoading(true);
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: 'chytrejim://reset',
       });
       if (error) throw error;
+      track({ type: 'auth_forgot_success' });
       Alert.alert(t("auth.reset"), t("auth.resetSent"));
     } catch (e: any) {
+      track({ type: 'auth_forgot_error', message: e?.message || 'unknown' });
       Alert.alert(t("common.error"), e?.message ?? "Please try again");
     } finally {
       setLoading(false);
@@ -69,4 +73,3 @@ export default function ForgotPasswordScreen() {
     </SafeAreaView>
   );
 }
-
