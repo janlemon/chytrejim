@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 1eCwyNm3zAmgqbibW9J9zNfjPHcYLvrUj0IOeWrWGaQp2HwkDdr1BD8AKUKi3jx
+\restrict EpwdsSkVplIryg5HGRi1j2B6VfccuA4441sKCdYF8vxNTzPcMhwefGk4hHgc57b
 
 -- Dumped from database version 17.4
 -- Dumped by pg_dump version 17.6
@@ -618,6 +618,8 @@ CREATE TABLE "public"."entries" (
     "inserted_at" timestamp with time zone DEFAULT "now"()
 );
 
+ALTER TABLE ONLY "public"."entries" FORCE ROW LEVEL SECURITY;
+
 
 --
 -- Name: foods; Type: TABLE; Schema: public; Owner: -
@@ -735,6 +737,8 @@ CREATE TABLE "public"."profiles" (
     CONSTRAINT "profiles_goal_check" CHECK (("goal" = ANY (ARRAY['lose'::"text", 'maintain'::"text", 'gain'::"text"])))
 );
 
+ALTER TABLE ONLY "public"."profiles" FORCE ROW LEVEL SECURITY;
+
 
 --
 -- Name: recommendation_runs; Type: TABLE; Schema: public; Owner: -
@@ -833,6 +837,8 @@ CREATE TABLE "public"."workouts" (
     "user_id" "uuid" NOT NULL,
     CONSTRAINT "workouts_intensity_check" CHECK (("intensity" = ANY (ARRAY['low'::"text", 'mid'::"text", 'high'::"text"])))
 );
+
+ALTER TABLE ONLY "public"."workouts" FORCE ROW LEVEL SECURITY;
 
 
 --
@@ -1037,6 +1043,13 @@ CREATE INDEX "ai_jobs_status_idx" ON "public"."ai_jobs" USING "btree" ("status")
 
 
 --
+-- Name: entries_user_date_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "entries_user_date_idx" ON "public"."entries" USING "btree" ("user_id", "date");
+
+
+--
 -- Name: foods_tags_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1069,6 +1082,13 @@ CREATE INDEX "idx_workouts_entry" ON "public"."workouts" USING "btree" ("entry_i
 --
 
 CREATE INDEX "meal_images_meal_idx" ON "public"."meal_images" USING "btree" ("meal_id");
+
+
+--
+-- Name: workouts_user_entry_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "workouts_user_entry_idx" ON "public"."workouts" USING "btree" ("user_id", "entry_id");
 
 
 --
@@ -1232,6 +1252,14 @@ ALTER TABLE ONLY "public"."usage_limits"
 
 ALTER TABLE ONLY "public"."user_preferences"
     ADD CONSTRAINT "user_preferences_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+--
+-- Name: workouts workouts_entry_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY "public"."workouts"
+    ADD CONSTRAINT "workouts_entry_fk" FOREIGN KEY ("entry_id") REFERENCES "public"."entries"("id") ON DELETE CASCADE;
 
 
 --
@@ -1687,5 +1715,5 @@ ALTER TABLE "public"."workouts" ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 1eCwyNm3zAmgqbibW9J9zNfjPHcYLvrUj0IOeWrWGaQp2HwkDdr1BD8AKUKi3jx
+\unrestrict EpwdsSkVplIryg5HGRi1j2B6VfccuA4441sKCdYF8vxNTzPcMhwefGk4hHgc57b
 

@@ -74,6 +74,17 @@ export default function ReviewStep() {
     return (age >= 0 && age < 130) ? age : null;
   };
   const ageYears = calcAge(birthDate);
+  const fmtDate = (iso: string): string => {
+    if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso || '';
+    const [y, m, d] = iso.split('-').map(n => parseInt(n, 10));
+    const dt = new Date(y, m - 1, d);
+    const locale = (t as any).i18n?.language === 'cs' ? 'cs-CZ' : 'en-US';
+    try {
+      return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' }).format(dt);
+    } catch {
+      return iso;
+    }
+  };
 
   const requiredMissing = {
     birth_date: !birthDate,
@@ -85,6 +96,82 @@ export default function ReviewStep() {
     consent: !data.consent_terms || !data.consent_privacy,
   };
   const anyMissing = Object.values(requiredMissing).some(Boolean);
+
+  // Localized labels for diet/allergen/cuisine codes
+  const labelFor = (code: string) => {
+    const lang = (t as any).i18n?.language === 'cs' ? 'cs' : 'en';
+    // Diets
+    const DIETS = [
+      { code: 'vegan', cs: 'Vegan', en: 'Vegan' },
+      { code: 'vegetarian', cs: 'Vegetarián', en: 'Vegetarian' },
+      { code: 'pescetarian', cs: 'Pescetarián', en: 'Pescetarian' },
+      { code: 'mediterranean', cs: 'Středomořská', en: 'Mediterranean' },
+      { code: 'low-carb', cs: 'Low‑carb', en: 'Low‑carb' },
+      { code: 'keto', cs: 'Keto', en: 'Keto' },
+      { code: 'low-fodmap', cs: 'Low‑FODMAP', en: 'Low‑FODMAP' },
+      { code: 'gluten-free', cs: 'Bez lepku', en: 'Gluten‑free' },
+      { code: 'dairy-free', cs: 'Bez mléka', en: 'Dairy‑free' },
+      { code: 'high-protein', cs: 'Vysoký protein', en: 'High‑protein' },
+    ];
+    const ALLERGENS = [
+      { code: 'gluten', cs: 'Lepek', en: 'Gluten' },
+      { code: 'milk', cs: 'Mléko', en: 'Milk' },
+      { code: 'lactose', cs: 'Laktóza', en: 'Lactose' },
+      { code: 'egg', cs: 'Vejce', en: 'Egg' },
+      { code: 'peanut', cs: 'Arašíd', en: 'Peanut' },
+      { code: 'tree-nut', cs: 'Skořápkové plody', en: 'Tree nut' },
+      { code: 'soy', cs: 'Sója', en: 'Soy' },
+      { code: 'fish', cs: 'Ryba', en: 'Fish' },
+      { code: 'crustacean', cs: 'Korýš', en: 'Crustacean' },
+      { code: 'mollusc', cs: 'Měkkýš', en: 'Mollusc' },
+      { code: 'sesame', cs: 'Sezam', en: 'Sesame' },
+      { code: 'celery', cs: 'Celer', en: 'Celery' },
+      { code: 'mustard', cs: 'Hořčice', en: 'Mustard' },
+      { code: 'sulphite', cs: 'Siřičitany', en: 'Sulphites' },
+      { code: 'lupin', cs: 'Vlčí bob (Lupina)', en: 'Lupin' },
+    ];
+    const CUISINES = [
+      { code: 'italian', cs: 'Italská', en: 'Italian' },
+      { code: 'chinese', cs: 'Čínská', en: 'Chinese' },
+      { code: 'japanese', cs: 'Japonská', en: 'Japanese' },
+      { code: 'indian', cs: 'Indická', en: 'Indian' },
+      { code: 'thai', cs: 'Thajská', en: 'Thai' },
+      { code: 'mexican', cs: 'Mexická', en: 'Mexican' },
+      { code: 'american', cs: 'Americká', en: 'American' },
+      { code: 'french', cs: 'Francouzská', en: 'French' },
+      { code: 'spanish', cs: 'Španělská', en: 'Spanish' },
+      { code: 'greek', cs: 'Řecká', en: 'Greek' },
+      { code: 'mediterranean', cs: 'Středomořská', en: 'Mediterranean' },
+      { code: 'korean', cs: 'Korejská', en: 'Korean' },
+      { code: 'vietnamese', cs: 'Vietnamská', en: 'Vietnamese' },
+      { code: 'turkish', cs: 'Turecká', en: 'Turkish' },
+      { code: 'lebanese', cs: 'Libanonská', en: 'Lebanese' },
+      { code: 'brazilian', cs: 'Brazilská', en: 'Brazilian' },
+      { code: 'ethiopian', cs: 'Etiopská', en: 'Ethiopian' },
+      { code: 'moroccan', cs: 'Marocká', en: 'Moroccan' },
+      { code: 'czech', cs: 'Česká', en: 'Czech' },
+      { code: 'slovak', cs: 'Slovenská', en: 'Slovak' },
+      { code: 'polish', cs: 'Polská', en: 'Polish' },
+    ];
+    const tables = [DIETS, ALLERGENS, CUISINES];
+    for (const tbl of tables) {
+      const item = (tbl as any[]).find(x => x.code === code);
+      if (item) return item[lang];
+    }
+    if (code && String(code).startsWith('custom:')) return String(code).slice(7).replace(/-/g, ' ');
+    return code;
+  };
+
+  const bmi = (() => {
+    if (!heightCm || !weightKg) return null;
+    const h = Number(heightCm);
+    const w = Number(weightKg);
+    if (!Number.isFinite(h) || !Number.isFinite(w) || h <= 0) return null;
+    const m = h / 100;
+    const val = w / (m * m);
+    if (!Number.isFinite(val) || val <= 0) return null;
+    return Math.round(val * 10) / 10; // one decimal
+  })();
 
   const onSave = async () => {
     setErrBanner(null);
@@ -130,26 +217,41 @@ export default function ReviewStep() {
         // Optional fields left null for now (first_name, activity_level, ...)
       } as any;
 
-      const { error: perr } = await supabase.from('profiles').upsert(payload);
+      const { error: perr } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' }).select();
       if (perr) throw perr;
 
-      // 3) upsert user_preferences with cuisines + allergens
+      // 3) upsert user_preferences with cuisines + allergens (conflict on user_id)
+      const allergensToSave: string[] = Array.isArray(data.allergens)
+        ? data.allergens
+        : (Array.isArray(prefs.allergens) ? prefs.allergens : []);
       const pref = {
         user_id: user.id,
         cuisines: (data.cuisines && data.cuisines.length) ? data.cuisines : null,
-        allergens: (data.allergens && data.allergens.length) ? data.allergens : null,
+        allergens: allergensToSave,
       } as any;
-      await supabase.from('user_preferences').upsert(pref).catch(() => {});
+      const { error: uprefErr } = await supabase
+        .from('user_preferences')
+        .upsert(pref, { onConflict: 'user_id' })
+        .select();
+      if (uprefErr) throw uprefErr;
 
-      // 4) compute personalized targets (optional)
-      await supabase.rpc('compute_and_save_targets_for_me', { p_steps_target: 8000 }).catch(() => {});
+      // 4) compute personalized targets (optional, non-fatal)
+      try {
+        await supabase.rpc('compute_and_save_targets_for_me', { p_steps_target: 8000 });
+      } catch (e) {
+        console.error('targets RPC failed', e);
+      }
 
       // 5) mark onboarded in auth metadata so Gate stops redirecting
-      await supabase.auth.updateUser({ data: { onboarded: true } });
+      const { error: metaErr } = await supabase.auth.updateUser({ data: { onboarded: true } });
+      if (metaErr) throw metaErr;
 
+      track({ type: 'review_finish_click', valid: true });
       router.replace('/(tabs)');
     } catch (e: any) {
+      console.error('Review finish failed', e);
       Alert.alert(t('common.error'), e?.message ?? 'Please try again');
+      setErrBanner(t('common.error'));
     }
   };
 
@@ -162,7 +264,7 @@ export default function ReviewStep() {
   );
 
   const SectionCard = ({ title, children, complete, onEdit, testID }: { title: string; children: React.ReactNode; complete: boolean; onEdit: () => void; testID: string }) => (
-    <View testID={testID} accessibilityRole="summary" style={{ borderWidth: 2, borderColor: complete ? tokens.border : theme.colors.warning || '#b45309', borderRadius: 16, backgroundColor: tokens.card, padding: 12 }}>
+    <View testID={testID} accessibilityRole="summary" style={{ borderWidth: 2, borderColor: complete ? tokens.border : theme.colors.warning || '#b45309', borderRadius: 16, backgroundColor: tokens.card, padding: 16 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 16 }}>{title}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -176,10 +278,22 @@ export default function ReviewStep() {
     </View>
   );
 
-  const Row = ({ label, value, testID }: { label: string; value: string; testID?: string }) => (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', minHeight: 48, alignItems: 'center' }}>
-      <Text style={{ color: tokens.muted, fontSize: 14 }}>{label}</Text>
-      <Text testID={testID} style={{ color: tokens.text, fontWeight: '600', fontSize: 16, textAlign: 'right' }}>{value}</Text>
+  const InfoRow = ({ label, value, hint, showDivider = true, testID }: { label: string; value: React.ReactNode; hint?: string; showDivider?: boolean; testID?: string }) => (
+    <View accessibilityHint={hint}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 6, minHeight: 52 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: tokens.muted, fontSize: 14 }}>{label}</Text>
+          {!!hint && <Text style={{ color: tokens.subtext, fontSize: 13, lineHeight: 18, marginTop: 2 }}>{hint}</Text>}
+        </View>
+        <View style={{ maxWidth: '45%' }}>
+          {typeof value === 'string' ? (
+            <Text testID={testID} style={{ color: tokens.text, fontWeight: '600', fontSize: 16 }}>{value}</Text>
+          ) : (
+            <View testID={testID}>{value}</View>
+          )}
+        </View>
+      </View>
+      {showDivider && <View style={{ height: 1, backgroundColor: tokens.border }} />}
     </View>
   );
 
@@ -215,69 +329,87 @@ export default function ReviewStep() {
           <Text testID="review-title" style={{ color: tokens.text, fontSize: 22, lineHeight: 28, fontWeight: '700', textAlign: 'center' }}>{t('onboarding.reviewTitle')}</Text>
           <Text style={{ color: tokens.subtext, textAlign: 'center' }}>{t('onboarding.reviewSubtitle')}</Text>
         </View>
-        <ScrollView contentContainerStyle={{ gap: 12 }}>
+        <ScrollView style={{ marginTop: 16 }} contentContainerStyle={{ gap: 12 }}>
           <SectionCard
-            title={t('onboarding.profileTitle') as string}
+            title={t('onboarding.sectionProfileTitle') as string}
             complete={!requiredMissing.birth_date && !requiredMissing.gender}
             onEdit={() => router.push('/(onboarding)/profile')}
             testID="review-card-profile"
           >
-            <Row label={t('onboarding.firstNamePlaceholder')} value={firstName || t('onboarding.notSet')} testID="review-value-first_name" />
-            <Row label={t('onboarding.lastNamePlaceholder')} value={lastName || t('onboarding.notSet')} testID="review-value-last_name" />
-            <Row label={t('onboarding.birthDatePlaceholder')} value={birthDate || t('onboarding.missing')} testID="review-value-birth_date" />
-            {ageYears != null && <Row label={t('onboarding.ageTitle')} value={(t('onboarding.years', { n: ageYears }) as string)} testID="review-value-age" />}
-            {!!gender && <Row label={t('onboarding.genderTitle')} value={t(`onboarding.gender.${gender}`)} testID="review-value-gender" />}
+            <InfoRow label={t('onboarding.firstNameLabel') as string} value={firstName || (t('onboarding.notSet') as string)} testID="review-row-first-name" />
+            <InfoRow label={t('onboarding.lastNameLabel') as string} value={lastName || (t('onboarding.notSet') as string)} testID="review-row-last-name" />
+            <InfoRow label={t('onboarding.birthDateLabel') as string} value={birthDate ? fmtDate(birthDate) : (t('onboarding.missing') as string)} testID="review-row-birth-date" />
+            {ageYears != null && <InfoRow label={t('onboarding.ageLabel') as string} value={(t('onboarding.years', { n: ageYears }) as string)} testID="review-row-age" />}
+            {!!gender && <InfoRow label={t('onboarding.genderLabel') as string} value={t(`onboarding.gender.${gender}`) as string} testID="review-row-gender" showDivider={false} />}
           </SectionCard>
 
           <SectionCard
-            title={t('onboarding.heightTitle') as string}
+            title={t('onboarding.sectionBodyTitle') as string}
             complete={!requiredMissing.height && !requiredMissing.weight}
             onEdit={() => router.push('/(onboarding)/height')}
             testID="review-card-body"
           >
-            <Row label={t('onboarding.heightTitle')} value={heightCm ? `${heightCm} cm` : (t('onboarding.missing') as string)} testID="review-value-height_cm" />
-            <Row label={t('onboarding.weightTitle')} value={weightKg ? `${weightKg} kg` : (t('onboarding.missing') as string)} testID="review-value-initial_weight_kg" />
-            <Text style={{ color: tokens.muted, fontSize: 12 }}>{t('onboarding.bmiHint')}</Text>
+            <InfoRow label={t('onboarding.heightLabel') as string} value={heightCm ? `${heightCm} cm` : (t('onboarding.missing') as string)} testID="review-row-height" />
+            <InfoRow label={t('onboarding.weightLabel') as string} value={weightKg ? `${weightKg} kg` : (t('onboarding.missing') as string)} testID="review-row-weight" />
+            {bmi != null && <InfoRow label={t('onboarding.bmiTitle') as string} value={String(bmi)} testID="review-row-bmi" hint={t('onboarding.bmiHint') as string} showDivider={false} />}
+            {bmi == null && <View />}
           </SectionCard>
 
           <SectionCard
-            title={t('onboarding.activityTitle') as string}
+            title={t('onboarding.sectionLifestyleTitle') as string}
             complete={!requiredMissing.activity && !requiredMissing.goal}
             onEdit={() => router.push('/(onboarding)/lifestyle')}
             testID="review-card-lifestyle"
           >
-            <Row label={t('onboarding.activityTitle')} value={activity ? (t(`onboarding.activity.${activity}`) as string) : (t('onboarding.missing') as string)} testID="review-value-activity_level" />
-            <Row label={t('onboarding.goalTitle')} value={goal ? (t(`onboarding.goal.${goal}`) as string) : (t('onboarding.missing') as string)} testID="review-value-goal" />
+            <InfoRow
+              label={t('onboarding.activityLabel') as string}
+              value={activity ? (t(`onboarding.activity.${activity}`) as string) : (t('onboarding.missing') as string)}
+              hint={activity ? (t(`onboarding.activityDesc.${activity}`) as string) : undefined}
+              testID="review-row-activity-level"
+            />
+            <InfoRow
+              label={t('onboarding.goalLabel') as string}
+              value={goal ? (t(`onboarding.goal.${goal}`) as string) : (t('onboarding.missing') as string)}
+              showDivider={false}
+              testID="review-row-goal"
+            />
           </SectionCard>
 
           <SectionCard
-            title={t('onboarding.dietTitle') as string}
+            title={t('onboarding.nutritionTitle') as string}
             complete={true}
             onEdit={() => router.push('/(onboarding)/diet')}
             testID="review-card-nutrition"
           >
-            <View style={{ marginBottom: 6 }}>
-              <Text style={{ color: tokens.muted, marginBottom: 6 }}>{t('onboarding.dietaryFlags')}</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                {(diets || []).slice(0,5).map(code => (
-                  <Chip key={code} testID={`review-chip-diet-${code}`} label={code} />
-                ))}
-                {diets && diets.length > 5 && (
-                  <Chip label={`+${diets.length - 5} more`} />
-                )}
-              </View>
-            </View>
-            <View>
-              <Text style={{ color: tokens.muted, marginBottom: 6 }}>{t('onboarding.allergensTitle')}</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                {(allergens || []).slice(0,5).map(code => (
-                  <Chip key={code} testID={`review-chip-allergen-${code}`} label={code} />
-                ))}
-                {allergens && allergens.length > 5 && (
-                  <Chip label={`+${allergens.length - 5} more`} />
-                )}
-              </View>
-            </View>
+            <InfoRow
+              label={t('onboarding.dietsLabel') as string}
+              testID="review-row-diets"
+              value={(
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                  {(diets || []).slice(0,5).map(code => (
+                    <Chip key={code} testID={`review-chip-diet-${code}`} label={labelFor(code)} />
+                  ))}
+                  {diets && diets.length > 5 && (
+                    <Chip label={`+${diets.length - 5} more`} />
+                  )}
+                </View>
+              )}
+            />
+            <InfoRow
+              label={t('onboarding.allergensTitle') as string}
+              showDivider={false}
+              testID="review-row-allergens"
+              value={(
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                  {(allergens || []).slice(0,5).map(code => (
+                    <Chip key={code} testID={`review-chip-allergen-${code}`} label={labelFor(code)} />
+                  ))}
+                  {allergens && allergens.length > 5 && (
+                    <Chip label={`+${allergens.length - 5} more`} />
+                  )}
+                </View>
+              )}
+            />
           </SectionCard>
         </ScrollView>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, width: '100%', maxWidth: 360, alignSelf: 'center' }}>
