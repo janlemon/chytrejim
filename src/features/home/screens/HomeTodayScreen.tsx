@@ -8,6 +8,10 @@ import {
   Text,
   View,
   useColorScheme,
+  Modal,
+  TextInput,
+  TouchableOpacity,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from "react-native-svg";
@@ -186,6 +190,8 @@ export default function HomeTodayScreen() {
   const [stepsToday, setStepsToday] = useState(0);
   const [stepsTarget, setStepsTarget] = useState(0);
   const [meals, setMeals] = useState<string[]>([]);
+  const [stepsModalOpen, setStepsModalOpen] = useState(false);
+  const [stepsInput, setStepsInput] = useState('');
 
   const todayISO = useMemo(() => localDateISO(new Date()), []);
 
@@ -440,8 +446,8 @@ export default function HomeTodayScreen() {
       <View style={[styles.card, { backgroundColor: tokens.card, borderColor: tokens.border }]}>
         <View style={styles.cardHeaderRow}>
           <Text style={[styles.cardTitle, { color: tokens.text }]}>{t('home.today.steps')}</Text>
-          <Pressable>
-            <Text style={{ color: tokens.subtext }}>{t('home.today.connect')}</Text>
+          <Pressable onPress={() => { setStepsInput(String(stepsToday || '')); setStepsModalOpen(true); }}>
+            <Text style={{ color: tokens.subtext }}>{t('home.today.addSteps') || 'Add steps'}</Text>
           </Pressable>
         </View>
         <Bar pct={stepsPct} color={tokens.accent} />
@@ -460,6 +466,36 @@ export default function HomeTodayScreen() {
           />
         </View>
       </View>
+
+      {/* Add Steps Modal */}
+      <Modal
+        visible={stepsModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setStepsModalOpen(false)}
+      >
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={() => setStepsModalOpen(false)} />
+        <View style={{ backgroundColor: tokens.card, padding: 16 }}>
+          <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 16, marginBottom: 8 }}>{t('home.today.addSteps') || 'Add steps'}</Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: tokens.bg, color: tokens.text, borderColor: tokens.border }]}
+            value={stepsInput}
+            onChangeText={(txt) => setStepsInput(txt.replace(/[^0-9]/g, ''))}
+            keyboardType="number-pad"
+            placeholder={String(stepsToday || 0)}
+            placeholderTextColor={tokens.muted}
+            accessibilityLabel={t('home.today.addSteps') || 'Add steps'}
+          />
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+            <TouchableOpacity onPress={() => setStepsModalOpen(false)} style={[styles.btn, { backgroundColor: tokens.card, borderColor: tokens.border }]}>
+              <Text style={{ color: tokens.text }}>{t('common.back')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => saveStepsForToday(parseInt(stepsInput || '0', 10))} style={[styles.btn, { backgroundColor: tokens.accent, borderColor: 'transparent' }]}>
+              <Text style={{ color: '#111', fontWeight: '600' }}>{t('common.ok')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <View style={[styles.card, { backgroundColor: tokens.card, borderColor: tokens.border }]}>
         <View style={styles.cardHeaderRow}>
@@ -552,6 +588,39 @@ const styles = StyleSheet.create({
   },
   muted: { fontSize: 16 },
   value: { fontSize: 18, fontWeight: "700" },
+  const saveStepsForToday = useCallback(async (value: number) => {
+    if (!Number.isInteger(value) || value < 0 || value > 200000) {
+      Alert.alert(t('common.error'), t('home.today.addStepsError') || 'Enter a valid number of steps.');
+      return;
+    }
+    try {
+      const { data: ures, error: uerr } = await supabase.auth.getUser();
+      if (uerr) throw uerr;
+      const user = ures.user; if (!user) throw new Error('No user');
+      const today = localDateISO(new Date());
+
+      const { data: upd, error: upErr } = await supabase
+        .from('entries')
+        .update({ steps: value })
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .select();
+      if (!upErr && (!upd || upd.length === 0)) {
+        const { error: insErr } = await supabase
+          .from('entries')
+          .insert({ user_id: user.id, date: today, steps: value });
+        if (insErr) throw insErr;
+      }
+
+      setStepsToday(value);
+      const stepsK = (typeof value === 'number') ? Math.round(value * 0.04) : 0;
+      setStepsKcal(stepsK);
+      setStepsModalOpen(false);
+    } catch (e: any) {
+      Alert.alert(t('common.error'), e?.message ?? 'Could not save steps');
+    }
+  }, [t]);
+
 
   barOuter: {
     height: 12,
@@ -581,4 +650,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  input: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  }
 });
