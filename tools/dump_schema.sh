@@ -35,14 +35,61 @@ if [[ -z "${SUPABASE_PROJECT_REF:-}" && -n "${EXPO_PUBLIC_SUPABASE_URL:-}" ]]; t
   SUPABASE_PROJECT_REF="$(echo "$EXPO_PUBLIC_SUPABASE_URL" | sed -E 's|https?://([^.]+)\.supabase\.co.*|\1|')"
 fi
 
-# Interactive prompts (only when run in a TTY) to make setup easier
+# Interactive builder (TTY only): build DB_URL from known patterns so you only enter a password
 if [[ -z "$DB_URL" && -t 0 ]]; then
+  # 1) Project ref
   if [[ -z "${SUPABASE_PROJECT_REF:-}" ]]; then
     read -r -p "Enter SUPABASE_PROJECT_REF (e.g. wjhfcaynarzkqzvekzaf): " SUPABASE_PROJECT_REF || true
   fi
-  if [[ -n "${SUPABASE_PROJECT_REF:-}" && -z "${SUPABASE_DB_PASSWORD:-}" ]]; then
-    read -s -p "Enter database password for project ${SUPABASE_PROJECT_REF}: " SUPABASE_DB_PASSWORD || true
-    echo ""
+  # Try to infer from https URL if still empty
+  if [[ -z "${SUPABASE_PROJECT_REF:-}" && -n "${EXPO_PUBLIC_SUPABASE_URL:-}" ]]; then
+    SUPABASE_PROJECT_REF="$(echo "$EXPO_PUBLIC_SUPABASE_URL" | sed -E 's|https?://([^.]+)\.supabase\.co.*|\1|')"
+  fi
+
+  # 2) Connection type
+  if [[ -n "${SUPABASE_PROJECT_REF:-}" && -z "$DB_URL" ]]; then
+    echo "Select connection type:"
+    echo "  1) Session pooler (recommended)"
+    echo "  2) Transaction pooler"
+    echo "  3) Direct (db.${SUPABASE_PROJECT_REF}.supabase.co)"
+    read -r -p "Choice [1/2/3] (default 1): " CHOICE || true
+    CHOICE=${CHOICE:-1}
+
+    # 3) Password (hidden)
+    if [[ -z "${SUPABASE_DB_PASSWORD:-}" ]]; then
+      read -s -p "Enter database password for project ${SUPABASE_PROJECT_REF}: " SUPABASE_DB_PASSWORD || true
+      echo ""
+    fi
+
+    # URL-encode password safely
+    if command -v python3 >/dev/null 2>&1; then
+      ENC_PW=$(python3 - <<PY
+import os, urllib.parse
+print(urllib.parse.quote(os.environ.get('SUPABASE_DB_PASSWORD','')))
+PY
+)
+    else
+      ENC_PW="$SUPABASE_DB_PASSWORD"
+    fi
+
+    # 4) Build URL
+    case "$CHOICE" in
+      2)
+        # Transaction pooler
+        PHOST="${SUPABASE_DB_POOLER_HOST:-aws-1-eu-central-1.pooler.supabase.com}"
+        DB_URL="postgresql://postgres.${SUPABASE_PROJECT_REF}:${ENC_PW}@${PHOST}:6543/postgres?sslmode=require"
+        ;;
+      3)
+        # Direct host
+        DB_URL="postgresql://postgres:${ENC_PW}@db.${SUPABASE_PROJECT_REF}.supabase.co:5432/postgres?sslmode=require"
+        ;;
+      *)
+        # Session pooler (default)
+        PHOST="${SUPABASE_DB_POOLER_HOST:-aws-1-eu-central-1.pooler.supabase.com}"
+        DB_URL="postgresql://postgres.${SUPABASE_PROJECT_REF}:${ENC_PW}@${PHOST}:5432/postgres?sslmode=require"
+        ;;
+    esac
+    echo "Using ${DB_URL%%:*}://***:***@$(echo "$DB_URL" | sed -E 's|^[a-z]+://([^@]+@)?||; s|\?.*$||')"
   fi
 fi
 
@@ -143,7 +190,7 @@ fi
 
 # As a last interactive fallback, allow entering full DB URL
 if [[ -z "$DB_URL" && -t 0 ]]; then
-  read -r -p "Enter full SUPABASE_DB_URL (or leave empty to abort): " DB_URL || true
+  read -r -p "Enter full SUPABASE_DB_URL (postgresql://...) or leave empty to abort: " DB_URL || true
 fi
 
 if [[ -z "$DB_URL" ]]; then
