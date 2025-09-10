@@ -1,2 +1,2 @@
-import ConsentStep from "@/features/onboarding/screens/ConsentStep";
+import ConsentStep from "../../src/features/onboarding/screens/ConsentStep";
 export default ConsentStep;

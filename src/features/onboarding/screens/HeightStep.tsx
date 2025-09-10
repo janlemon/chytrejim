@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/onboarding/OnboardingContext';
 import { theme, buttonStyle, buttonTextStyle, inputStyle, invertedButtonStyle, invertedButtonTextStyle } from '@/theme';
 import { useTranslation } from 'react-i18next';
+import { track } from '@/analytics';
+import { useEffect } from 'react';
 import { getTokens } from '@/ui/tokens';
 
 export default function HeightStep() {
@@ -18,6 +20,7 @@ export default function HeightStep() {
     const onlyDigits = txt.replace(/[^0-9]/g, '');
     setHeight(onlyDigits);
   };
+  useEffect(() => { track({ type: 'onboarding_step_open', step: 'height' }); }, []);
   return (
     <SafeAreaView style={{ flex: 1, padding: theme.space.xl, backgroundColor: tokens.bg }}>
       <View style={{ flex: 1, gap: 16, paddingHorizontal: 20 }}>
@@ -43,10 +46,10 @@ export default function HeightStep() {
         ) : null}
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, width: '100%', maxWidth: 360 }}>
-          <TouchableOpacity testID="onboarding-back" onPress={() => router.back()} style={[buttonStyle, { flex: 1, backgroundColor: tokens.card, borderWidth: 1, borderColor: tokens.border }]}>
+          <TouchableOpacity testID="onboarding-back" onPress={() => { track({ type: 'onboarding_back_click', step: 'height' }); router.back(); }} style={[buttonStyle, { flex: 1, backgroundColor: tokens.card, borderWidth: 1, borderColor: tokens.border }]}>
             <Text style={[buttonTextStyle, { color: tokens.text }]}>{t('common.back')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity testID="onboarding-next" onPress={() => router.push('/(onboarding)/weight')} disabled={!valid} style={[invertedButtonStyle, { flex: 1, opacity: valid ? 1 : 0.6 }]}>
+          <TouchableOpacity testID="onboarding-next" onPress={() => { track({ type: 'onboarding_input', field: 'height_cm', value: h }); track({ type: 'onboarding_next_click', step: 'height' }); router.push('/(onboarding)/weight'); }} disabled={!valid} style={[invertedButtonStyle, { flex: 1, opacity: valid ? 1 : 0.6 }]}>
             <Text style={invertedButtonTextStyle}>{t('common.next')}</Text>
           </TouchableOpacity>
         </View>

@@ -6,6 +6,7 @@ import { useOnboarding } from '@/onboarding/OnboardingContext';
 import { theme, buttonStyle, buttonTextStyle, invertedButtonStyle, invertedButtonTextStyle } from '@/theme';
 import { useTranslation } from 'react-i18next';
 import { getTokens } from '@/ui/tokens';
+import { track } from '@/analytics';
 
 export default function GoalStep() {
   const router = useRouter();
@@ -18,6 +19,9 @@ export default function GoalStep() {
   const [error, setError] = useState<string | null>(null);
   const savedRef = useRef<string | null>(null);
 
+  // Screen open analytics
+  useEffect(() => { track({ type: 'onboarding_step_open', step: 'goal' }); }, []);
+
   useEffect(() => {
     let mounted = true;
     AccessibilityInfo.isScreenReaderEnabled().then(v => mounted && setSrEnabled(!!v));
@@ -28,6 +32,7 @@ export default function GoalStep() {
   const onSelect = async (id: 'lose'|'maintain'|'gain'|'explore') => {
     setGoal(id);
     savedRef.current = id;
+    track({ type: 'onboarding_select_option', step: 'goal', value: id });
     try { await Haptics.selectionAsync(); } catch {}
     setSaving(true);
     import('@/onboarding/api').then(({ saveProfileGoal }) =>
@@ -83,7 +88,7 @@ export default function GoalStep() {
           </View>
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-          <TouchableOpacity testID="onboarding-back" onPress={() => router.back()} style={[buttonStyle, { flex: 1, backgroundColor: tokens.card, borderWidth: 1, borderColor: tokens.border }]}>
+          <TouchableOpacity testID="onboarding-back" onPress={() => { track({ type: 'onboarding_back_click', step: 'goal' }); router.back(); }} style={[buttonStyle, { flex: 1, backgroundColor: tokens.card, borderWidth: 1, borderColor: tokens.border }]}>
             <Text style={[buttonTextStyle, { color: tokens.text }]}>{t('common.back')}</Text>
           </TouchableOpacity>
           <TouchableOpacity

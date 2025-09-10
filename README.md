@@ -10,7 +10,23 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Configure environment
+
+   Create a `.env` file (you can copy from `.env.example`) and fill in your Supabase project credentials:
+
+   ```bash
+   cp .env.example .env
+   # then edit .env with your values
+   ```
+
+   Required vars:
+
+   - `EXPO_PUBLIC_SUPABASE_URL` – your Supabase project URL
+   - `EXPO_PUBLIC_SUPABASE_ANON_KEY` – your public anon key
+
+   The app reads these via `app.config.ts` into `expo.extra`.
+
+3. Start the app
 
    ```bash
    npx expo start
@@ -24,6 +40,10 @@ In the output, you'll find options to open the app in a
 - [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+
+### Deep links (password reset)
+
+The app scheme is `chytrejim`. Supabase password reset links are handled by `app/_layout.tsx` and should redirect to `chytrejim://reset`.
 
 ## Get a fresh project
 

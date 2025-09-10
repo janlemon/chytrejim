@@ -7,6 +7,7 @@ import { theme, buttonStyle, buttonTextStyle, invertedButtonStyle, invertedButto
 import { useTranslation } from 'react-i18next';
 import { getTokens } from '../../../ui/tokens';
 import { saveProfileGender } from '../../../onboarding/api';
+import { track } from '@/analytics';
 
 type GenderKey = 'male' | 'female' | 'prefer_not_to_say';
 
@@ -22,6 +23,7 @@ export default function GenderStep() {
   const savedRef = useRef<GenderKey | null>(null);
 
   useEffect(() => {
+    track({ type: 'onboarding_step_open', step: 'gender' });
     let mounted = true;
     AccessibilityInfo.isScreenReaderEnabled().then(v => mounted && setSrEnabled(!!v));
     const sub = AccessibilityInfo.addEventListener('screenReaderChanged', (v: boolean) => setSrEnabled(!!v));
@@ -37,6 +39,8 @@ export default function GenderStep() {
   const onSelect = async (key: GenderKey) => {
     setGender(key);
     savedRef.current = key;
+    // log selection
+    track({ type: 'onboarding_select_option', step: 'gender', value: key });
     try { await Haptics.selectionAsync(); } catch {}
     setSaving(true);
     saveProfileGender(key).catch(() => {
@@ -95,13 +99,13 @@ export default function GenderStep() {
           </View>
         </View>
         <View style={{ flexDirection: 'row', gap: 12, paddingTop: 8 }}>
-          <TouchableOpacity testID="onboarding-back" onPress={() => router.back()} style={[buttonStyle, { flex: 1, backgroundColor: tokens.card, borderWidth: 1, borderColor: tokens.border }]}>
+          <TouchableOpacity testID="onboarding-back" onPress={() => { track({ type: 'onboarding_back_click', step: 'gender' }); router.back(); }} style={[buttonStyle, { flex: 1, backgroundColor: tokens.card, borderWidth: 1, borderColor: tokens.border }]}>
             <Text style={[buttonTextStyle, { color: tokens.text }]}>{t('common.back')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             testID="onboarding-next"
             disabled={srEnabled ? !canNext : false}
-            onPress={() => router.push('/(onboarding)/height')}
+            onPress={() => { track({ type: 'onboarding_next_click', step: 'gender' }); router.push('/(onboarding)/height'); }}
             style={[invertedButtonStyle, { flex: 1, opacity: (srEnabled && !canNext) ? 0.6 : 1 }]}>
             <Text style={invertedButtonTextStyle}>{t('common.next')}</Text>
           </TouchableOpacity>
@@ -115,4 +119,3 @@ export default function GenderStep() {
     </SafeAreaView>
   );
 }
-

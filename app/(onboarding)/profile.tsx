@@ -1,2 +1,2 @@
-import ProfileStep from "@features/onboarding/screens/ProfileStep";
+import ProfileStep from "../../src/features/onboarding/screens/ProfileStep";
 export default ProfileStep;

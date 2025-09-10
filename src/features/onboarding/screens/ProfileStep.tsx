@@ -1,11 +1,12 @@
 import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Platform, Modal, Pressable, useColorScheme } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useOnboarding } from '@/onboarding/OnboardingContext';
 import { theme, buttonStyle, buttonTextStyle, inputStyle, invertedButtonStyle, invertedButtonTextStyle } from '@/theme';
 import { useTranslation } from 'react-i18next';
 import { getTokens } from '@/ui/tokens';
+import { track } from '@/analytics';
 
 export default function ProfileStep() {
   const router = useRouter();
@@ -15,6 +16,9 @@ export default function ProfileStep() {
   const tokens = getTokens(colorScheme === 'dark');
   const [showPicker, setShowPicker] = useState(false);
   const [tempDate, setTempDate] = useState<Date | null>(null);
+  
+  // Screen open analytics
+  useEffect(() => { track({ type: 'onboarding_step_open', step: 'profile' }); }, []);
   
   // Simple validation for birth_date (required, YYYY-MM-DD, age 13..100)
   const validateBirth = (v: string): string | null => {
@@ -164,3 +168,4 @@ export default function ProfileStep() {
     </SafeAreaView>
   );
 }
+ 

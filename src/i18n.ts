@@ -14,6 +14,10 @@ const resources = {
         today: {
           energy: "Dnešní energie",
           consumed: "Snědeno",
+          target: "Cíl",
+          metabolism: "Metabolismus",
+          movement: "Pohyb",
+          show: "zobrazit",
           remaining: "Zbývá",
           over: "Přes limit o",
           overBy: "Přes limit o {{n}}",
@@ -180,6 +184,10 @@ const resources = {
         today: {
           energy: "Today energy",
           consumed: "Consumed",
+          target: "Target",
+          metabolism: "Metabolism",
+          movement: "Movement",
+          show: "show",
           remaining: "Remaining",
           over: "Over by",
           overBy: "Over by {{n}}",

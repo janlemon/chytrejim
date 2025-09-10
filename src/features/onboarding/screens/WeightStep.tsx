@@ -5,6 +5,8 @@ import { theme, buttonStyle, buttonTextStyle, inputStyle, invertedButtonStyle, i
 import { useTranslation } from 'react-i18next';
 import { getTokens } from '../../../ui/tokens';
 import { computeTargetsAfterWeight } from '../../../onboarding/api';
+import { track } from '@/analytics';
+import { useEffect } from 'react';
 
 export default function WeightStep() {
   const router = useRouter();
@@ -27,6 +29,7 @@ export default function WeightStep() {
     cleaned = cleaned.replace(',', '.');
     setWeight(cleaned);
   };
+  useEffect(() => { track({ type: 'onboarding_step_open', step: 'weight' }); }, []);
   return (
     <SafeAreaView style={{ flex: 1, padding: theme.space.xl, backgroundColor: tokens.bg }}>
       <View style={{ flex: 1, gap: 16, paddingHorizontal: 20 }}>
@@ -52,12 +55,12 @@ export default function WeightStep() {
         ) : null}
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, width: '100%', maxWidth: 360 }}>
-          <TouchableOpacity testID="onboarding-back" onPress={() => router.back()} style={[buttonStyle, { flex: 1, backgroundColor: tokens.card, borderWidth: 1, borderColor: tokens.border }]}>
+          <TouchableOpacity testID="onboarding-back" onPress={() => { track({ type: 'onboarding_back_click', step: 'weight' }); router.back(); }} style={[buttonStyle, { flex: 1, backgroundColor: tokens.card, borderWidth: 1, borderColor: tokens.border }]}>
             <Text style={[buttonTextStyle, { color: tokens.text }]}>{t('common.back')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             testID="onboarding-next"
-            onPress={() => { computeTargetsAfterWeight(w).catch(() => {}); router.push('/(onboarding)/lifestyle'); }}
+            onPress={() => { track({ type: 'onboarding_input', field: 'weight_kg', value: w }); computeTargetsAfterWeight(w).catch(() => {}); track({ type: 'onboarding_next_click', step: 'weight' }); router.push('/(onboarding)/lifestyle'); }}
             disabled={!valid}
             style={[invertedButtonStyle, { flex: 1, opacity: valid ? 1 : 0.6 }]}
           >
@@ -68,4 +71,3 @@ export default function WeightStep() {
     </SafeAreaView>
   );
 }
-

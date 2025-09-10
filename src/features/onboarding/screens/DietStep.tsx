@@ -92,6 +92,8 @@ export default function DietStep() {
   const { data, setDietaryFlags, setAllergens, setCuisines } = useOnboarding();
   const colorScheme = useColorScheme();
   const tokens = getTokens(colorScheme === 'dark');
+  // Screen open analytics
+  useEffect(() => { track({ type: 'onboarding_step_open', step: 'diet' }); }, []);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -396,17 +398,17 @@ export default function DietStep() {
                   ListFooterComponent={() => (
                     <View>
                       {filterTab === 'allergens' && (allergenSuggestions.length > 5 && !showMoreAll) ? (
-                        <TouchableOpacity onPress={() => setShowMoreAll(true)} style={{ minHeight: 44, paddingHorizontal: 12, justifyContent: 'center', borderTopWidth: 1, borderTopColor: tokens.border }}>
+                        <TouchableOpacity onPress={() => { setShowMoreAll(true); track({ type: 'onboarding_select_option', step: 'diet_show_more', value: 'allergens' }); }} style={{ minHeight: 44, paddingHorizontal: 12, justifyContent: 'center', borderTopWidth: 1, borderTopColor: tokens.border }}>
                           <Text style={{ color: tokens.accent }}>{t('onboarding.showMore')}</Text>
                         </TouchableOpacity>
                       ) : null}
                       {filterTab === 'diets' && (dietSuggestions.length > 5 && !showMoreDiet) ? (
-                        <TouchableOpacity onPress={() => setShowMoreDiet(true)} style={{ minHeight: 44, paddingHorizontal: 12, justifyContent: 'center', borderTopWidth: 1, borderTopColor: tokens.border }}>
+                        <TouchableOpacity onPress={() => { setShowMoreDiet(true); track({ type: 'onboarding_select_option', step: 'diet_show_more', value: 'diets' }); }} style={{ minHeight: 44, paddingHorizontal: 12, justifyContent: 'center', borderTopWidth: 1, borderTopColor: tokens.border }}>
                           <Text style={{ color: tokens.accent }}>{t('onboarding.showMore')}</Text>
                         </TouchableOpacity>
                       ) : null}
                       {query ? (
-                        <TouchableOpacity testID="diet-add-custom" onPress={() => { addCustomDiet(); track({ type: 'diet_select', code: `custom:${slug(query)}`, source: 'custom' }); }} style={{ minHeight: 44, paddingHorizontal: 12, justifyContent: 'center', borderTopWidth: 1, borderTopColor: tokens.border }}>
+                        <TouchableOpacity testID="diet-add-custom" onPress={() => { addCustomDiet(); track({ type: 'diet_select', code: `custom:${slug(query)}`, source: 'custom' }); track({ type: 'onboarding_select_option', step: 'diet_custom_add', value: query }); }} style={{ minHeight: 44, paddingHorizontal: 12, justifyContent: 'center', borderTopWidth: 1, borderTopColor: tokens.border }}>
                           <Text style={{ color: tokens.text }}>{t('onboarding.addCustom')} &quot;{query}&quot;</Text>
                         </TouchableOpacity>
                       ) : null}
@@ -489,7 +491,7 @@ export default function DietStep() {
                     }}
                     ListFooterComponent={() => (
                       cQuery ? (
-                        <TouchableOpacity testID="cuisine-add-custom" onPress={() => { setCuisines([...(data.cuisines || []), `custom:${slug(cQuery)}`]); setCQuery(''); }} style={{ minHeight: 44, paddingHorizontal: 12, justifyContent: 'center', borderTopWidth: 1, borderTopColor: tokens.border }}>
+                        <TouchableOpacity testID="cuisine-add-custom" onPress={() => { setCuisines([...(data.cuisines || []), `custom:${slug(cQuery)}`]); track({ type: 'onboarding_select_option', step: 'cuisine_custom_add', value: cQuery }); setCQuery(''); }} style={{ minHeight: 44, paddingHorizontal: 12, justifyContent: 'center', borderTopWidth: 1, borderTopColor: tokens.border }}>
                           <Text style={{ color: tokens.text }}>{t('onboarding.addCustom')} &quot;{cQuery}&quot;</Text>
                         </TouchableOpacity>
                       ) : null

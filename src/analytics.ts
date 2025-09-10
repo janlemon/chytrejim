@@ -5,7 +5,12 @@ export type DietEvent =
   | { type: 'diet_remove'; code: string };
 
 export type OnboardingEvent =
+  | { type: 'onboarding_step_open'; step: string }
+  | { type: 'onboarding_next_click'; step: string }
+  | { type: 'onboarding_back_click'; step: string }
   | { type: 'onboarding_select'; step: 'activity_level'; value: 'sedentary'|'light'|'moderate'|'active'|'very_active' }
+  | { type: 'onboarding_select_option'; step: string; value: string }
+  | { type: 'onboarding_input'; field: string; value?: string | number }
   | { type: 'onboarding_learn_more_open' }
   | { type: 'onboarding_activity_suggest_used'; source: 'steps'|'quiz'; value: 'sedentary'|'light'|'moderate'|'active'|'very_active' };
 

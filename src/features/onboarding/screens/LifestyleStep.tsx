@@ -25,6 +25,9 @@ export default function LifestyleStep() {
   const [quizDays, setQuizDays] = useState<'d0_1'|'d1_3'|'d3_5'|'d6_7'|null>(null);
   const [quizWork, setQuizWork] = useState<'sedentary'|'mixed'|'manual'|null>(null);
 
+  // Screen open analytics
+  useEffect(() => { track({ type: 'onboarding_step_open', step: 'lifestyle' }); }, []);
+
   useEffect(() => {
     let mounted = true;
     AccessibilityInfo.isScreenReaderEnabled().then(v => mounted && setSrEnabled(!!v));
@@ -119,7 +122,7 @@ export default function LifestyleStep() {
           {suggestCTA}
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-          <TouchableOpacity testID="onboarding-back" onPress={() => router.back()} style={[buttonStyle, { flex: 1, backgroundColor: tokens.card, borderWidth: 1, borderColor: tokens.border }]}>
+          <TouchableOpacity testID="onboarding-back" onPress={() => { track({ type: 'onboarding_back_click', step: 'lifestyle' }); router.back(); }} style={[buttonStyle, { flex: 1, backgroundColor: tokens.card, borderWidth: 1, borderColor: tokens.border }]}>
             <Text style={[buttonTextStyle, { color: tokens.text }]}>{t('common.back')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -197,3 +200,4 @@ export default function LifestyleStep() {
     </SafeAreaView>
   );
 }
+ 

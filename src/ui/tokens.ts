@@ -8,6 +8,7 @@ export type UITokens = {
   primary: string; // brand black
   accent: string;  // lemon ring
   disabled: string;
+  danger: string;  // errors / over-limit
 };
 
 // Brand palette (light/dark) per spec
@@ -23,6 +24,7 @@ export function getTokens(dark: boolean): UITokens {
       primary: '#111827',
       accent: '#FACC15',
       disabled: '#2A3441',
+      danger: '#F87171',
     };
   }
   return {
@@ -35,5 +37,6 @@ export function getTokens(dark: boolean): UITokens {
     primary: '#111827',
     accent: '#FACC15',
     disabled: '#CBD5E1',
+    danger: '#EF4444',
   };
 }

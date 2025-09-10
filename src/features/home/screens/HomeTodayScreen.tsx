@@ -9,35 +9,19 @@ import {
   View,
   useColorScheme,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from "react-native-svg";
 import { track } from "@/analytics";
 import { supabase } from "../../../lib/supabase";
+import { getTokens } from '@/ui/tokens';
+import { useTranslation } from 'react-i18next';
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const localDateISO = (d = new Date()) =>
   `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const fmtCZ = (n: number) => n.toLocaleString("cs-CZ");
 
-const light = {
-  bg: "#F7F8FA",
-  card: "#FFFFFF",
-  text: "#0F172A",
-  subtext: "#475569",
-  muted: "#64748B",
-  border: "#E5E7EB",
-  accent: "#FACC15",
-  error: "#EF4444",
-};
-const dark = {
-  bg: "#0B0F13",
-  card: "#0F141A",
-  text: "#EEF2F7",
-  subtext: "#9AA4B2",
-  muted: "#7A8594",
-  border: "#1F2A37",
-  accent: "#FACC15",
-  error: "#F87171",
-};
+// Colors come from UI tokens
 
 const Bar: React.FC<{ pct: number; color: string }> = ({ pct, color }) => (
   <View style={styles.barOuter}>
@@ -57,10 +41,13 @@ const Donut: React.FC<{
   consumed: number;
   target: number;
   accent: string;
-  error: string;
+  danger: string;
   textColor: string;
+  borderColor: string;
   unit: "kcal" | "%";
-}> = ({ consumed, target, accent, error, textColor, unit }) => {
+  remainingLabel: string;
+  overLabel: string;
+}> = ({ consumed, target, accent, danger, textColor, borderColor, unit, remainingLabel, overLabel }) => {
   const capped = Math.min(consumed, target);
   const p = target > 0 ? capped / target : 0;
   const dash = `${(p * CIRC).toFixed(1)} ${CIRC}`;
@@ -76,7 +63,7 @@ const Donut: React.FC<{
           0,
           Math.min(100, Math.round((consumed / Math.max(1, target)) * 100))
         )}%`;
-  const centerSmall = remaining >= 0 ? "zbývá" : "navíc";
+  const centerSmall = remaining >= 0 ? remainingLabel : overLabel;
 
   return (
     <View
@@ -98,7 +85,7 @@ const Donut: React.FC<{
           cx={100}
           cy={100}
           r={R}
-          stroke={light.border}
+          stroke={borderColor}
           strokeWidth={16}
           fill="none"
           strokeLinecap="round"
@@ -117,7 +104,7 @@ const Donut: React.FC<{
           cx={100}
           cy={100}
           r={R}
-          stroke={error}
+          stroke={danger}
           strokeWidth={6}
           fill="none"
           strokeLinecap="round"
@@ -144,17 +131,17 @@ const Row: React.FC<{ label: string; value: string; muted: string; text: string 
   </View>
 );
 
-const Chip: React.FC<{ text: string; error?: boolean; t: typeof light }> = ({
+const Chip: React.FC<{ text: string; error?: boolean; t: any }> = ({
   text,
   error,
   t,
 }) => (
-  <View style={[styles.chip, { borderColor: error ? t.error : t.border }]}>
-    <Text style={{ color: error ? t.error : t.text, fontSize: 12 }}>{text}</Text>
+  <View style={[styles.chip, { borderColor: error ? t.danger : t.border }]}>
+    <Text style={{ color: error ? t.danger : t.text, fontSize: 12 }}>{text}</Text>
   </View>
 );
 
-const PrimaryBtn: React.FC<{ label: string; onPress: () => void; t: typeof light }> = ({
+const PrimaryBtn: React.FC<{ label: string; onPress: () => void; t: any }> = ({
   label,
   onPress,
   t,
@@ -170,7 +157,7 @@ const PrimaryBtn: React.FC<{ label: string; onPress: () => void; t: typeof light
 const SecondaryBtn: React.FC<{
   label: string;
   onPress: () => void;
-  t: typeof light;
+  t: any;
 }> = ({ label, onPress, t }) => (
   <Pressable
     onPress={onPress}
@@ -182,7 +169,8 @@ const SecondaryBtn: React.FC<{
 
 export default function HomeTodayScreen() {
   const scheme = useColorScheme();
-  const t = scheme === "dark" ? dark : light;
+  const tokens = getTokens(scheme === 'dark');
+  const { t } = useTranslation();
 
   const [loading, setLoading] = useState(true);
   const [unit, setUnit] = useState<"kcal" | "%">("kcal");
@@ -361,14 +349,16 @@ export default function HomeTodayScreen() {
   const stepsPct = stepsTarget > 0 ? (stepsToday / stepsTarget) * 100 : 0;
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: tokens.bg }} edges={["top"]}>
     <ScrollView
-      style={[styles.screen, { backgroundColor: t.bg }]}
+      style={styles.screen}
       contentContainerStyle={styles.container}
+      contentInsetAdjustmentBehavior="automatic"
     >
       <View style={styles.headerRow}>
         <View>
-          <Text style={[styles.hi, { color: t.text }]}>Ahoj, {firstName || ""}</Text>
-          <Text style={[styles.date, { color: t.muted }]}>
+          <Text style={[styles.hi, { color: tokens.text }]}>Ahoj, {firstName || ""}</Text>
+          <Text style={[styles.date, { color: tokens.muted }]}>
             {new Intl.DateTimeFormat("cs-CZ", {
               weekday: "short",
               day: "numeric",
@@ -377,26 +367,26 @@ export default function HomeTodayScreen() {
           </Text>
         </View>
         <Pressable style={styles.iconBtn} accessibilityRole="button" accessibilityLabel="Menu" onPress={() => track({ type: 'home_menu_click' })}>
-          <Text style={{ color: t.text, fontSize: 18 }}>⋯</Text>
+          <Text style={{ color: tokens.text, fontSize: 18 }}>⋯</Text>
         </Pressable>
       </View>
 
-      <View style={[styles.card, { backgroundColor: t.card, borderColor: t.border }]} testID="home-energy-card">
+      <View style={[styles.card, { backgroundColor: tokens.card, borderColor: tokens.border }]} testID="home-energy-card">
         <View style={styles.cardHeaderRow}>
-          <Text style={[styles.cardTitle, { color: t.text }]}>Dnešní energie</Text>
+          <Text style={[styles.cardTitle, { color: tokens.text }]}>{t('home.today.energy')}</Text>
           <View style={styles.toggleRow}>
-            <Text style={[styles.toggleLabel, { color: t.muted }]}>zobrazit</Text>
+            <Text style={[styles.toggleLabel, { color: tokens.muted }]}>{t('home.today.show')}</Text>
             <Pressable
               onPress={() => { setUnit("kcal"); track({ type: 'home_toggle_unit', unit: 'kcal' }); }}
-              style={[styles.toggleBtn, unit === "kcal" && { backgroundColor: t.border }]}
+              style={[styles.toggleBtn, unit === "kcal" && { backgroundColor: tokens.border }]}
             >
-              <Text style={{ color: t.text }}>kcal</Text>
+              <Text style={{ color: tokens.text }}>{t('home.today.kcal')}</Text>
             </Pressable>
             <Pressable
               onPress={() => { setUnit("%"); track({ type: 'home_toggle_unit', unit: '%' }); }}
-              style={[styles.toggleBtn, unit === "%" && { backgroundColor: t.border }]}
+              style={[styles.toggleBtn, unit === "%" && { backgroundColor: tokens.border }]}
             >
-              <Text style={{ color: t.text }}>%</Text>
+              <Text style={{ color: tokens.text }}>{t('home.today.percent')}</Text>
             </Pressable>
           </View>
         </View>
@@ -405,78 +395,81 @@ export default function HomeTodayScreen() {
           <Donut
             consumed={consumed}
             target={target}
-            accent={t.accent}
-            error={t.error}
-            textColor={t.text}
+            accent={tokens.accent}
+            danger={tokens.danger}
+            textColor={tokens.text}
+            borderColor={tokens.border}
             unit={unit}
+            remainingLabel={t('home.today.remaining')}
+            overLabel={t('home.today.over')}
           />
         </View>
 
-        <View style={[styles.breakdown, { borderColor: t.border }]} accessibilityRole="summary">
-          <Row label="Snědeno" value={`${fmtCZ(consumed)} kcal`} muted={t.muted} text={t.text} />
-          <Row label="Cíl" value={target > 0 ? `${fmtCZ(target)} kcal` : "—"} muted={t.muted} text={t.text} />
-          <Row label="Metabolismus" value={`${fmtCZ(bmr)} kcal`} muted={t.muted} text={t.text} />
-          <Row label="Pohyb" value={`${fmtCZ(Math.round(movementKcal))} kcal`} muted={t.muted} text={t.text} />
+        <View style={[styles.breakdown, { borderColor: tokens.border }]} accessibilityRole="summary">
+          <Row label={t('home.today.consumed')} value={`${fmtCZ(consumed)} ${t('home.today.kcal')}`} muted={tokens.muted} text={tokens.text} />
+          <Row label={t('home.today.target') as string} value={target > 0 ? `${fmtCZ(target)} ${t('home.today.kcal')}` : "—"} muted={tokens.muted} text={tokens.text} />
+          <Row label={t('home.today.metabolism') as string} value={`${fmtCZ(bmr)} ${t('home.today.kcal')}`} muted={tokens.muted} text={tokens.text} />
+          <Row label={t('home.today.movement') as string} value={`${fmtCZ(Math.round(movementKcal))} ${t('home.today.kcal')}`} muted={tokens.muted} text={tokens.text} />
         </View>
       </View>
 
-      <View style={[styles.card, { backgroundColor: t.card, borderColor: t.border }]}>
+      <View style={[styles.card, { backgroundColor: tokens.card, borderColor: tokens.border }]}>
         <View style={styles.cardHeaderRow}>
-          <Text style={[styles.cardTitle, { color: t.text }]}>Protein</Text>
+          <Text style={[styles.cardTitle, { color: tokens.text }]}>{t('home.today.protein')}</Text>
           <Pressable>
-            <Text style={{ color: t.subtext }}>Nastav cíl</Text>
+            <Text style={{ color: tokens.subtext }}>{t('home.today.editTargets')}</Text>
           </Pressable>
         </View>
-        <Bar pct={proteinPct} color={t.accent} />
+        <Bar pct={proteinPct} color={tokens.accent} />
         <View style={styles.split}>
-          <Text style={{ color: t.muted }}>{`${fmtCZ(proteinToday)} g z ${fmtCZ(
+          <Text style={{ color: tokens.muted }}>{`${fmtCZ(proteinToday)} g z ${fmtCZ(
             proteinTarget
           )} g`}</Text>
           <Chip
             text={
               proteinTarget - proteinToday >= 0
-                ? `${fmtCZ(Math.round(proteinTarget - proteinToday))} g zbývá`
-                : `+${fmtCZ(Math.abs(Math.round(proteinTarget - proteinToday)))} g navíc`
+                ? (t('home.today.left', { n: Math.round(proteinTarget - proteinToday) }) as string)
+                : `${fmtCZ(Math.abs(Math.round(proteinTarget - proteinToday)))} g ${t('home.today.over')}`
             }
             error={proteinTarget - proteinToday < 0}
-            t={t}
+            t={tokens}
           />
         </View>
       </View>
 
-      <View style={[styles.card, { backgroundColor: t.card, borderColor: t.border }]}>
+      <View style={[styles.card, { backgroundColor: tokens.card, borderColor: tokens.border }]}>
         <View style={styles.cardHeaderRow}>
-          <Text style={[styles.cardTitle, { color: t.text }]}>Kroky</Text>
+          <Text style={[styles.cardTitle, { color: tokens.text }]}>{t('home.today.steps')}</Text>
           <Pressable>
-            <Text style={{ color: t.subtext }}>Připojit Zdraví</Text>
+            <Text style={{ color: tokens.subtext }}>{t('home.today.connect')}</Text>
           </Pressable>
         </View>
-        <Bar pct={stepsPct} color={t.accent} />
+        <Bar pct={stepsPct} color={tokens.accent} />
         <View style={styles.split}>
-          <Text style={{ color: t.muted }}>{`${fmtCZ(stepsToday)} z ${fmtCZ(
+          <Text style={{ color: tokens.muted }}>{`${fmtCZ(stepsToday)} z ${fmtCZ(
             stepsTarget
           )} kroků`}</Text>
           <Chip
             text={
               stepsTarget - stepsToday >= 0
-                ? `${fmtCZ(stepsTarget - stepsToday)} zbývá`
-                : `+${fmtCZ(Math.abs(stepsTarget - stepsToday))} navíc`
+                ? `${fmtCZ(stepsTarget - stepsToday)} ${t('home.today.remaining')}`
+                : `${fmtCZ(Math.abs(stepsTarget - stepsToday))} ${t('home.today.over')}`
             }
             error={stepsTarget - stepsToday < 0}
-            t={t}
+            t={tokens}
           />
         </View>
       </View>
 
-      <View style={[styles.card, { backgroundColor: t.card, borderColor: t.border }]}>
+      <View style={[styles.card, { backgroundColor: tokens.card, borderColor: tokens.border }]}>
         <View style={styles.cardHeaderRow}>
-          <Text style={[styles.cardTitle, { color: t.text }]}>Poslední jídla</Text>
+          <Text style={[styles.cardTitle, { color: tokens.text }]}>{t('home.today.recentMeals')}</Text>
           <Pressable>
-            <Text style={{ color: t.subtext }}>Přidat jídlo</Text>
+            <Text style={{ color: tokens.subtext }}>{t('home.today.logMeal')}</Text>
           </Pressable>
         </View>
         {meals.length === 0 ? (
-          <Text style={{ color: t.muted }}>Zatím žádná jídla — Přidej první</Text>
+          <Text style={{ color: tokens.muted }}>{t('home.today.noMeals')}</Text>
         ) : (
           <View style={styles.mealsGrid}>
             {meals.slice(0, 4).map((url, i) => (
@@ -486,12 +479,12 @@ export default function HomeTodayScreen() {
         )}
       </View>
 
-      <View style={[styles.card, { backgroundColor: t.card, borderColor: t.border }]}>
-        <Text style={[styles.cardTitle, { color: t.text, marginBottom: 8 }]}>Rychlé akce</Text>
+      <View style={[styles.card, { backgroundColor: tokens.card, borderColor: tokens.border }]}>
+        <Text style={[styles.cardTitle, { color: tokens.text, marginBottom: 8 }]}>{t('home.today.quickActions')}</Text>
         <View style={styles.actions}>
-          <PrimaryBtn label="🍽️ Přidat jídlo" t={t} onPress={() => track({ type: 'home_quick_action', action: 'add_meal' })} />
-          <SecondaryBtn label="⚖️ Zadat váhu" t={t} onPress={() => track({ type: 'home_quick_action', action: 'add_weight' })} />
-          <PrimaryBtn label="🏃‍♂️ Začít trénink" t={t} onPress={() => track({ type: 'home_quick_action', action: 'start_workout' })} />
+          <PrimaryBtn label={t('home.today.logMeal')} t={tokens} onPress={() => track({ type: 'home_quick_action', action: 'add_meal' })} />
+          <SecondaryBtn label={t('home.today.addWeight')} t={tokens} onPress={() => track({ type: 'home_quick_action', action: 'add_weight' })} />
+          <PrimaryBtn label={t('home.today.startWorkout')} t={tokens} onPress={() => track({ type: 'home_quick_action', action: 'start_workout' })} />
         </View>
       </View>
 
@@ -501,6 +494,7 @@ export default function HomeTodayScreen() {
         </View>
       )}
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
