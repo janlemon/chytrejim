@@ -64,6 +64,21 @@ if [[ -z "$DB_URL" && -n "${SUPABASE_DB_HOST:-}" && -n "${SUPABASE_DB_NAME:-}" &
   DB_URL="postgresql://${SUPABASE_DB_USER}:${SUPABASE_DB_PASSWORD}@${SUPABASE_DB_HOST}:5432/${SUPABASE_DB_NAME}?sslmode=require"
 fi
 
+# Pooler: if host/user/password set, prefer these (unless DB_URL already defined)
+if [[ -z "$DB_URL" && -n "${SUPABASE_DB_POOLER_HOST:-}" && -n "${SUPABASE_DB_POOLER_USER:-}" && -n "${SUPABASE_DB_PASSWORD:-}" ]]; then
+  POOL_PORT="${SUPABASE_DB_POOLER_PORT:-5432}"
+  if command -v python3 >/dev/null 2>&1; then
+    ENC_PW=$(python3 - <<PY
+import os, urllib.parse
+print(urllib.parse.quote(os.environ.get('SUPABASE_DB_PASSWORD','')))
+PY
+)
+  else
+    ENC_PW="$SUPABASE_DB_PASSWORD"
+  fi
+  DB_URL="postgresql://${SUPABASE_DB_POOLER_USER}:${ENC_PW}@${SUPABASE_DB_POOLER_HOST}:${POOL_PORT}/postgres?sslmode=require"
+fi
+
 # Preflight DNS resolution check; if it fails and we're in a TTY, offer to enter full URL
 EXTRACT_HOST() { sed -E 's|^[a-z]+://([^@]+@)?([^:/?]+).*|\2|'; }
 HOST="$(printf '%s' "$DB_URL" | EXTRACT_HOST || true)"
