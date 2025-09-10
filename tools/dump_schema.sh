@@ -99,9 +99,44 @@ PY
   fi
   if [[ $RESOLVED_OK -ne 0 && -t 0 ]]; then
     echo "Warning: cannot resolve host '$HOST'."
-    read -r -p "Enter full SUPABASE_DB_URL to use instead (or leave empty to keep current): " ALT_URL || true
+    read -r -p "Enter full SUPABASE_DB_URL (postgresql://...) or paste your https://<ref>.supabase.co: " ALT_URL || true
     if [[ -n "$ALT_URL" ]]; then
-      DB_URL="$ALT_URL"
+      if [[ "$ALT_URL" =~ ^https?://([^.]+)\.supabase\.co ]]; then
+        SUPABASE_PROJECT_REF="${BASH_REMATCH[1]}"
+        # Ensure we have password
+        if [[ -z "${SUPABASE_DB_PASSWORD:-}" ]]; then
+          read -s -p "Enter database password for project ${SUPABASE_PROJECT_REF}: " SUPABASE_DB_PASSWORD || true
+          echo ""
+        fi
+        # Prefer pooler if available via env, otherwise use direct host
+        if [[ -n "${SUPABASE_DB_POOLER_HOST:-}" ]]; then
+          POOL_PORT="${SUPABASE_DB_POOLER_PORT:-5432}"
+          if command -v python3 >/dev/null 2>&1; then
+            ENC_PW=$(python3 - <<PY
+import os, urllib.parse
+print(urllib.parse.quote(os.environ.get('SUPABASE_DB_PASSWORD','')))
+PY
+)
+          else
+            ENC_PW="$SUPABASE_DB_PASSWORD"
+          fi
+          DB_URL="postgresql://postgres.${SUPABASE_PROJECT_REF}:${ENC_PW}@${SUPABASE_DB_POOLER_HOST}:${POOL_PORT}/postgres?sslmode=require"
+        else
+          if command -v python3 >/dev/null 2>&1; then
+            ENC_PW=$(python3 - <<PY
+import os, urllib.parse
+print(urllib.parse.quote(os.environ.get('SUPABASE_DB_PASSWORD','')))
+PY
+)
+          else
+            ENC_PW="$SUPABASE_DB_PASSWORD"
+          fi
+          DB_URL="postgresql://postgres:${ENC_PW}@db.${SUPABASE_PROJECT_REF}.supabase.co:5432/postgres?sslmode=require"
+        fi
+        echo "Derived Postgres URL for project '${SUPABASE_PROJECT_REF}'."
+      else
+        DB_URL="$ALT_URL"
+      fi
     fi
   fi
 fi
