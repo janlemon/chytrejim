@@ -47,11 +47,48 @@ if [[ -z "$DB_URL" && -t 0 ]]; then
 fi
 
 if [[ -z "$DB_URL" && -n "${SUPABASE_PROJECT_REF:-}" && -n "${SUPABASE_DB_PASSWORD:-}" ]]; then
-  DB_URL="postgresql://postgres:${SUPABASE_DB_PASSWORD}@db.${SUPABASE_PROJECT_REF}.supabase.co:5432/postgres?sslmode=require"
+  # URL-encode password to be safe
+  if command -v python3 >/dev/null 2>&1; then
+    ENC_PW=$(python3 - <<PY
+import os, urllib.parse
+print(urllib.parse.quote(os.environ.get('SUPABASE_DB_PASSWORD','')))
+PY
+)
+  else
+    ENC_PW="$SUPABASE_DB_PASSWORD"
+  fi
+  DB_URL="postgresql://postgres:${ENC_PW}@db.${SUPABASE_PROJECT_REF}.supabase.co:5432/postgres?sslmode=require"
 fi
 
 if [[ -z "$DB_URL" && -n "${SUPABASE_DB_HOST:-}" && -n "${SUPABASE_DB_NAME:-}" && -n "${SUPABASE_DB_USER:-}" && -n "${SUPABASE_DB_PASSWORD:-}" ]]; then
   DB_URL="postgresql://${SUPABASE_DB_USER}:${SUPABASE_DB_PASSWORD}@${SUPABASE_DB_HOST}:5432/${SUPABASE_DB_NAME}?sslmode=require"
+fi
+
+# Preflight DNS resolution check; if it fails and we're in a TTY, offer to enter full URL
+EXTRACT_HOST() { sed -E 's|^[a-z]+://([^@]+@)?([^:/?]+).*|\2|'; }
+HOST="$(printf '%s' "$DB_URL" | EXTRACT_HOST || true)"
+if [[ -n "$DB_URL" && -n "$HOST" ]]; then
+  RESOLVED_OK=0
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - <<PY "$HOST" >/dev/null 2>&1 || RESOLVED_OK=1
+import socket, sys
+socket.gethostbyname(sys.argv[1])
+PY
+  else
+    # Best-effort using nslookup/dig
+    if command -v nslookup >/dev/null 2>&1; then
+      nslookup "$HOST" >/dev/null 2>&1 || RESOLVED_OK=1
+    elif command -v dig >/dev/null 2>&1; then
+      dig +short "$HOST" | grep -qE '.' || RESOLVED_OK=1
+    fi
+  fi
+  if [[ $RESOLVED_OK -ne 0 && -t 0 ]]; then
+    echo "Warning: cannot resolve host '$HOST'."
+    read -r -p "Enter full SUPABASE_DB_URL to use instead (or leave empty to keep current): " ALT_URL || true
+    if [[ -n "$ALT_URL" ]]; then
+      DB_URL="$ALT_URL"
+    fi
+  fi
 fi
 
 # As a last interactive fallback, allow entering full DB URL
