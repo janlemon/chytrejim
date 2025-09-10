@@ -35,12 +35,28 @@ if [[ -z "${SUPABASE_PROJECT_REF:-}" && -n "${EXPO_PUBLIC_SUPABASE_URL:-}" ]]; t
   SUPABASE_PROJECT_REF="$(echo "$EXPO_PUBLIC_SUPABASE_URL" | sed -E 's|https?://([^.]+)\.supabase\.co.*|\1|')"
 fi
 
+# Interactive prompts (only when run in a TTY) to make setup easier
+if [[ -z "$DB_URL" && -t 0 ]]; then
+  if [[ -z "${SUPABASE_PROJECT_REF:-}" ]]; then
+    read -r -p "Enter SUPABASE_PROJECT_REF (e.g. wjhfcaynarzkqzvekzaf): " SUPABASE_PROJECT_REF || true
+  fi
+  if [[ -n "${SUPABASE_PROJECT_REF:-}" && -z "${SUPABASE_DB_PASSWORD:-}" ]]; then
+    read -s -p "Enter database password for project ${SUPABASE_PROJECT_REF}: " SUPABASE_DB_PASSWORD || true
+    echo ""
+  fi
+fi
+
 if [[ -z "$DB_URL" && -n "${SUPABASE_PROJECT_REF:-}" && -n "${SUPABASE_DB_PASSWORD:-}" ]]; then
   DB_URL="postgresql://postgres:${SUPABASE_DB_PASSWORD}@db.${SUPABASE_PROJECT_REF}.supabase.co:5432/postgres?sslmode=require"
 fi
 
 if [[ -z "$DB_URL" && -n "${SUPABASE_DB_HOST:-}" && -n "${SUPABASE_DB_NAME:-}" && -n "${SUPABASE_DB_USER:-}" && -n "${SUPABASE_DB_PASSWORD:-}" ]]; then
   DB_URL="postgresql://${SUPABASE_DB_USER}:${SUPABASE_DB_PASSWORD}@${SUPABASE_DB_HOST}:5432/${SUPABASE_DB_NAME}?sslmode=require"
+fi
+
+# As a last interactive fallback, allow entering full DB URL
+if [[ -z "$DB_URL" && -t 0 ]]; then
+  read -r -p "Enter full SUPABASE_DB_URL (or leave empty to abort): " DB_URL || true
 fi
 
 if [[ -z "$DB_URL" ]]; then
