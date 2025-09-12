@@ -12,10 +12,12 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from "react-native-svg";
 import { track } from "@/analytics";
+import { useRouter } from 'expo-router';
 import { supabase } from "../../../lib/supabase";
 import { getTokens } from '@/ui/tokens';
 import { useTranslation } from 'react-i18next';
@@ -172,6 +174,7 @@ const SecondaryBtn: React.FC<{
 );
 
 export default function HomeTodayScreen() {
+  const router = useRouter();
   const scheme = useColorScheme();
   const tokens = getTokens(scheme === 'dark');
   const { t } = useTranslation();
@@ -192,6 +195,11 @@ export default function HomeTodayScreen() {
   const [meals, setMeals] = useState<string[]>([]);
   const [stepsModalOpen, setStepsModalOpen] = useState(false);
   const [stepsInput, setStepsInput] = useState('');
+  const [stepsMode, setStepsMode] = useState<'add'|'set'>('add');
+  const [proteinModalOpen, setProteinModalOpen] = useState(false);
+  const [proteinInput, setProteinInput] = useState('');
+  const [weightModalOpen, setWeightModalOpen] = useState(false);
+  const [weightInput, setWeightInput] = useState('');
 
   const todayISO = useMemo(() => localDateISO(new Date()), []);
 
@@ -350,6 +358,87 @@ export default function HomeTodayScreen() {
     load();
   }, [load]);
 
+  const saveStepsForToday = useCallback(async (value: number) => {
+    if (!Number.isInteger(value) || value < 0 || value > 200000) {
+      Alert.alert(t('common.error'), t('home.today.addStepsError') || 'Enter a valid number of steps.');
+      return;
+    }
+    try {
+      const { data: ures, error: uerr } = await supabase.auth.getUser();
+      if (uerr) throw uerr;
+      const user = ures.user; if (!user) throw new Error('No user');
+      const today = localDateISO(new Date());
+
+      if (stepsMode === 'add') {
+        const { error } = await supabase.rpc('add_steps_manual', { p_day: today, p_delta: value });
+        if (error) throw error;
+        // optimistic: navýš lokální
+        const next = (stepsToday || 0) + value;
+        setStepsToday(next);
+        setStepsKcal(Math.round(next * 0.04));
+      } else {
+        const { error } = await supabase.rpc('set_steps_manual', { p_day: today, p_value: value });
+        if (error) throw error;
+        setStepsToday(value);
+        setStepsKcal(Math.round(value * 0.04));
+      }
+      setStepsModalOpen(false);
+    } catch (e: any) {
+      Alert.alert(t('common.error'), e?.message ?? 'Could not save steps');
+    }
+  }, [t, stepsMode, stepsToday]);
+
+  const saveWeightForToday = useCallback(async () => {
+    const val = Number(String(weightInput).replace(',', '.'));
+    if (!Number.isFinite(val) || val < 35 || val > 300) {
+      Alert.alert(t('common.error'), t('home.today.addWeightError') || 'Enter valid weight (35–300 kg).');
+      return;
+    }
+    try {
+      const { data: ures, error: uerr } = await supabase.auth.getUser();
+      if (uerr) throw uerr;
+      const user = ures.user; if (!user) throw new Error('No user');
+      const today = localDateISO(new Date());
+      const { data: upd, error: upErr } = await supabase
+        .from('entries')
+        .update({ weight_kg: val })
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .select();
+      if (!upErr && (!upd || upd.length === 0)) {
+        const { error: insErr } = await supabase
+          .from('entries')
+          .insert({ user_id: user.id, date: today, weight_kg: val });
+        if (insErr) throw insErr;
+      }
+      setWeightModalOpen(false);
+      setWeightInput('');
+      load();
+    } catch (e: any) {
+      Alert.alert(t('common.error'), e?.message ?? 'Could not save weight');
+    }
+  }, [t, weightInput, load]);
+
+  const clearStepsForToday = useCallback(async () => {
+    try {
+      const { data: ures, error: uerr } = await supabase.auth.getUser();
+      if (uerr) throw uerr;
+      const user = ures.user; if (!user) throw new Error('No user');
+      const today = localDateISO(new Date());
+
+      const { error } = await supabase
+        .from('entries')
+        .update({ steps: null })
+        .eq('user_id', user.id)
+        .eq('date', today);
+      if (error) throw error;
+      setStepsToday(0);
+      setStepsKcal(0);
+    } catch (e: any) {
+      Alert.alert(t('common.error'), t('home.today.clearStepsError') || (e?.message ?? 'Could not clear steps'));
+    }
+  }, [t]);
+
   const movementKcal = (stepsKcal || 0) + (workoutKcal || 0);
   const proteinPct = proteinTarget > 0 ? (proteinToday / proteinTarget) * 100 : 0;
   const stepsPct = stepsTarget > 0 ? (stepsToday / stepsTarget) * 100 : 0;
@@ -364,15 +453,8 @@ export default function HomeTodayScreen() {
       <View style={styles.headerRow}>
         <View>
           <Text style={[styles.hi, { color: tokens.text }]}>Ahoj, {firstName || ""}</Text>
-          <Text style={[styles.date, { color: tokens.muted }]}>
-            {new Intl.DateTimeFormat("cs-CZ", {
-              weekday: "short",
-              day: "numeric",
-              month: "short",
-            }).format(new Date())}
-          </Text>
         </View>
-        <Pressable style={styles.iconBtn} accessibilityRole="button" accessibilityLabel="Menu" onPress={() => track({ type: 'home_menu_click' })}>
+        <Pressable style={styles.iconBtn} accessibilityRole="button" accessibilityLabel="Menu" onPress={() => { track({ type: 'home_menu_click' }); router.push('/settings/targets'); }}>
           <Text style={{ color: tokens.text, fontSize: 18 }}>⋯</Text>
         </Pressable>
       </View>
@@ -422,9 +504,11 @@ export default function HomeTodayScreen() {
       <View style={[styles.card, { backgroundColor: tokens.card, borderColor: tokens.border }]}>
         <View style={styles.cardHeaderRow}>
           <Text style={[styles.cardTitle, { color: tokens.text }]}>{t('home.today.protein')}</Text>
-          <Pressable>
-            <Text style={{ color: tokens.subtext }}>{t('home.today.editTargets')}</Text>
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <Pressable onPress={() => { setProteinInput(''); setProteinModalOpen(true); }}>
+              <Text style={{ color: tokens.subtext }}>{t('home.today.addProtein') || 'Add protein'}</Text>
+            </Pressable>
+          </View>
         </View>
         <Bar pct={proteinPct} color={tokens.accent} />
         <View style={styles.split}>
@@ -446,9 +530,25 @@ export default function HomeTodayScreen() {
       <View style={[styles.card, { backgroundColor: tokens.card, borderColor: tokens.border }]}>
         <View style={styles.cardHeaderRow}>
           <Text style={[styles.cardTitle, { color: tokens.text }]}>{t('home.today.steps')}</Text>
-          <Pressable onPress={() => { setStepsInput(String(stepsToday || '')); setStepsModalOpen(true); }}>
-            <Text style={{ color: tokens.subtext }}>{t('home.today.addSteps') || 'Add steps'}</Text>
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <Pressable onPress={() => { setStepsInput(String(stepsToday || '')); setStepsModalOpen(true); }}>
+              <Text style={{ color: tokens.subtext }}>{t('home.today.addSteps') || 'Add steps'}</Text>
+            </Pressable>
+            {stepsToday > 0 ? (
+              <Pressable onPress={() => {
+                Alert.alert(
+                  t('home.today.clearSteps') || 'Clear steps',
+                  t('home.today.clearStepsConfirm') || 'Remove today\'s steps?',
+                  [
+                    { text: t('common.back'), style: 'cancel' },
+                    { text: t('common.ok'), onPress: () => clearStepsForToday() },
+                  ]
+                );
+              }}>
+                <Text style={{ color: tokens.subtext }}>{t('home.today.clearSteps') || 'Clear steps'}</Text>
+              </Pressable>
+            ) : null}
+          </View>
         </View>
         <Bar pct={stepsPct} color={tokens.accent} />
         <View style={styles.split}>
@@ -486,11 +586,89 @@ export default function HomeTodayScreen() {
             placeholderTextColor={tokens.muted}
             accessibilityLabel={t('home.today.addSteps') || 'Add steps'}
           />
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+            {(['add','set'] as const).map(m => (
+              <Pressable key={m} onPress={() => setStepsMode(m)} style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 999, borderWidth: 1, borderColor: stepsMode===m ? tokens.accent : tokens.border }}>
+                <Text style={{ color: tokens.text }}>{m === 'add' ? (t('home.today.stepsModeAdd') || 'Add') : (t('home.today.stepsModeSet') || 'Set')}</Text>
+              </Pressable>
+            ))}
+          </View>
           <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
             <TouchableOpacity onPress={() => setStepsModalOpen(false)} style={[styles.btn, { backgroundColor: tokens.card, borderColor: tokens.border }]}>
               <Text style={{ color: tokens.text }}>{t('common.back')}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => saveStepsForToday(parseInt(stepsInput || '0', 10))} style={[styles.btn, { backgroundColor: tokens.accent, borderColor: 'transparent' }]}>
+              <Text style={{ color: '#111', fontWeight: '600' }}>{t('common.ok')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Add Weight Modal */}
+      <Modal
+        visible={weightModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setWeightModalOpen(false)}
+      >
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={() => setWeightModalOpen(false)} />
+        <View style={{ backgroundColor: tokens.card, padding: 16 }}>
+          <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 16, marginBottom: 8 }}>{t('home.today.addWeight')}</Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: tokens.bg, color: tokens.text, borderColor: tokens.border }]}
+            value={weightInput}
+            onChangeText={(txt) => setWeightInput(txt.replace(/[^0-9.,]/g, (ch) => (ch === ',' || ch === '.' ? ch : '')))}
+            keyboardType={Platform.OS === 'ios' ? 'decimal-pad' as any : 'numeric'}
+            placeholder={'75.0'}
+            placeholderTextColor={tokens.muted}
+            accessibilityLabel={t('home.today.addWeight')}
+          />
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+            <TouchableOpacity onPress={() => setWeightModalOpen(false)} style={[styles.btn, { backgroundColor: tokens.card, borderColor: tokens.border }]}>
+              <Text style={{ color: tokens.text }}>{t('common.back')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={saveWeightForToday} style={[styles.btn, { backgroundColor: tokens.accent, borderColor: 'transparent' }]}>
+              <Text style={{ color: '#111', fontWeight: '600' }}>{t('common.ok')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Add Protein Modal */}
+      <Modal
+        visible={proteinModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setProteinModalOpen(false)}
+      >
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={() => setProteinModalOpen(false)} />
+        <View style={{ backgroundColor: tokens.card, padding: 16 }}>
+          <Text style={{ color: tokens.text, fontWeight: '700', fontSize: 16, marginBottom: 8 }}>{t('home.today.addProtein') || 'Add protein'}</Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: tokens.bg, color: tokens.text, borderColor: tokens.border }]}
+            value={proteinInput}
+            onChangeText={(txt) => setProteinInput(txt.replace(/[^0-9.]/g, ''))}
+            keyboardType="decimal-pad"
+            placeholder={'30'}
+            placeholderTextColor={tokens.muted}
+            accessibilityLabel={t('home.today.addProtein') || 'Add protein'}
+          />
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+            <TouchableOpacity onPress={() => setProteinModalOpen(false)} style={[styles.btn, { backgroundColor: tokens.card, borderColor: tokens.border }]}>
+              <Text style={{ color: tokens.text }}>{t('common.back')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={async () => {
+              const grams = Number(proteinInput.replace(',', '.'));
+              if (!Number.isFinite(grams) || grams <= 0 || grams > 300) { Alert.alert(t('common.error'), t('home.today.addProteinError') || 'Enter valid protein grams'); return; }
+              try {
+                await supabase.rpc('log_manual_protein', { p_grams: grams });
+                setProteinModalOpen(false);
+                setProteinInput('');
+                load();
+              } catch (e: any) {
+                Alert.alert(t('common.error'), e?.message ?? 'Could not log protein');
+              }
+            }} style={[styles.btn, { backgroundColor: tokens.accent, borderColor: 'transparent' }]}>
               <Text style={{ color: '#111', fontWeight: '600' }}>{t('common.ok')}</Text>
             </TouchableOpacity>
           </View>
@@ -519,7 +697,7 @@ export default function HomeTodayScreen() {
         <Text style={[styles.cardTitle, { color: tokens.text, marginBottom: 8 }]}>{t('home.today.quickActions')}</Text>
         <View style={styles.actions}>
           <PrimaryBtn label={t('home.today.logMeal')} t={tokens} onPress={() => track({ type: 'home_quick_action', action: 'add_meal' })} />
-          <SecondaryBtn label={t('home.today.addWeight')} t={tokens} onPress={() => track({ type: 'home_quick_action', action: 'add_weight' })} />
+          <SecondaryBtn label={t('home.today.addWeight')} t={tokens} onPress={() => { track({ type: 'home_quick_action', action: 'add_weight' }); setWeightInput(''); setWeightModalOpen(true); }} />
           <PrimaryBtn label={t('home.today.startWorkout')} t={tokens} onPress={() => track({ type: 'home_quick_action', action: 'start_workout' })} />
         </View>
       </View>
@@ -588,40 +766,6 @@ const styles = StyleSheet.create({
   },
   muted: { fontSize: 16 },
   value: { fontSize: 18, fontWeight: "700" },
-  const saveStepsForToday = useCallback(async (value: number) => {
-    if (!Number.isInteger(value) || value < 0 || value > 200000) {
-      Alert.alert(t('common.error'), t('home.today.addStepsError') || 'Enter a valid number of steps.');
-      return;
-    }
-    try {
-      const { data: ures, error: uerr } = await supabase.auth.getUser();
-      if (uerr) throw uerr;
-      const user = ures.user; if (!user) throw new Error('No user');
-      const today = localDateISO(new Date());
-
-      const { data: upd, error: upErr } = await supabase
-        .from('entries')
-        .update({ steps: value })
-        .eq('user_id', user.id)
-        .eq('date', today)
-        .select();
-      if (!upErr && (!upd || upd.length === 0)) {
-        const { error: insErr } = await supabase
-          .from('entries')
-          .insert({ user_id: user.id, date: today, steps: value });
-        if (insErr) throw insErr;
-      }
-
-      setStepsToday(value);
-      const stepsK = (typeof value === 'number') ? Math.round(value * 0.04) : 0;
-      setStepsKcal(stepsK);
-      setStepsModalOpen(false);
-    } catch (e: any) {
-      Alert.alert(t('common.error'), e?.message ?? 'Could not save steps');
-    }
-  }, [t]);
-
-
   barOuter: {
     height: 12,
     borderRadius: 999,
